@@ -56,6 +56,7 @@ let copiedRegion = null;
 
 const udgList = document.getElementById("udgList");
 const editor = document.getElementById("editor");
+const tilePreview = document.getElementById("tilePreview");
 const screen = document.getElementById("screen");
 const selectedLabel = document.getElementById("selectedLabel");
 const dataOutput = document.getElementById("dataOutput");
@@ -418,6 +419,7 @@ function setEditorPixel(row, col, value) {
   udgs[selectedUdg][row][col] = value;
   refreshEditor();
   refreshUdgPreview(selectedUdg);
+  refreshTilePreview();
   refreshDataOutput();
   refreshPaintedCopies(selectedUdg);
 }
@@ -444,6 +446,33 @@ function refreshUdgPreview(index) {
     for (let col = 0; col < GRID_SIZE; col++) {
       if (udgs[index][row][col]) {
         context.fillRect(col * 2, row, 2, 1);
+      }
+    }
+  }
+}
+
+function refreshTilePreview() {
+  const context = tilePreview.getContext("2d");
+  const graphic = udgs[selectedUdg];
+
+  context.imageSmoothingEnabled = false;
+  context.fillStyle = spectrumColours[backgroundSelect.value];
+  context.fillRect(0, 0, tilePreview.width, tilePreview.height);
+  context.fillStyle = spectrumColours[foregroundSelect.value];
+
+  for (let tileRow = 0; tileRow < 6; tileRow++) {
+    for (let tileCol = 0; tileCol < 6; tileCol++) {
+      for (let pixelRow = 0; pixelRow < GRID_SIZE; pixelRow++) {
+        for (let pixelCol = 0; pixelCol < GRID_SIZE; pixelCol++) {
+          if (graphic[pixelRow][pixelCol]) {
+            context.fillRect(
+              tileCol * GRID_SIZE + pixelCol,
+              tileRow * GRID_SIZE + pixelRow,
+              1,
+              1
+            );
+          }
+        }
       }
     }
   }
@@ -540,6 +569,7 @@ function refreshAll() {
   });
 
   refreshEditor();
+  refreshTilePreview();
   refreshDataOutput();
 }
 
@@ -696,6 +726,8 @@ document.getElementById("zoom").addEventListener("change", (event) => {
 });
 
 includePokeCheckbox.addEventListener("change", refreshDataOutput);
+foregroundSelect.addEventListener("change", refreshTilePreview);
+backgroundSelect.addEventListener("change", refreshTilePreview);
 
 defaultInkSelect.addEventListener("change", () => {
   currentScreenObject().defaultInk = defaultInkSelect.value;

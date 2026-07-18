@@ -203,6 +203,22 @@ h2 {
   flex: 1;
 }
 
+.tile-preview-column {
+  width: 292px;
+  max-width: 100%;
+}
+
+#tilePreview {
+  display: block;
+  width: 292px;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border: 2px solid #222222;
+  background: black;
+  image-rendering: pixelated;
+}
+
 .tool-groups {
   display: grid;
   gap: 10px;

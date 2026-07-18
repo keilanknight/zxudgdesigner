@@ -1,0 +1,237 @@
+# ZX Spectrum UDG Graphics Editor
+
+A browser-based editor for designing ZX Spectrum user-defined graphics, arranging them into complete screens, and exporting the result as an auto-loading `.tap` file for an emulator or real hardware.
+
+The editor is deliberately self-contained and straightforward: there is no framework, account, server, or installation process. Open the page, draw some graphics, build screens, and save the project locally.
+
+© 2026 Keilan Knight. Open-source project.
+
+## Why this exists
+
+The ZX Spectrum makes it wonderfully easy to redefine characters, but turning a collection of 8×8 graphics into a complete reusable screen involves rather more work. You have to calculate character bytes, manage colours, place tiles, preserve the work somewhere, and eventually write a loader and renderer.
+
+This project brings that workflow into one visual tool. It is intended for:
+
+- Spectrum BASIC programmers who want usable `DATA` statements without calculating binary rows by hand.
+- Retro developers building title screens, maps, panels, character sets, or text-mode artwork.
+- Artists who want to experiment with the Spectrum's 8×8 graphics and attribute limitations.
+- Newcomers learning how UDGs, INK, PAPER, screen cells, and Spectrum tape files fit together.
+- Emulator and real-hardware users who want an immediately loadable result.
+
+## Run the editor
+
+No build step is required for development. Open `index.html` in a modern browser.
+
+For a website, upload the contents of `dist/` together:
+
+```text
+dist/
+├── index.html
+├── styles.css
+└── app.js
+```
+
+The files use relative paths, so the editor can be hosted in a subdirectory as well as at the root of a site.
+
+## What it can do
+
+### Four UDG banks
+
+The editor provides four banks of 21 UDGs, giving 84 available designs in total. Each bank contains the familiar Spectrum UDG positions A–U.
+
+- Switch banks with the Bank 1–4 buttons.
+- Press `1`–`4` when not typing in a form field to change the active screen-design bank.
+- Press `A`–`U` to select the corresponding UDG.
+- Every UDG remembers its own default INK and PAPER preview colours.
+- Banks can be mixed freely on the same designed screen.
+
+Only UDGs containing pixel data are packed into a TAP export. Blank slots do not consume eight bytes each in the graphics package.
+
+### 8×8 UDG editor
+
+Select a bank and a letter, then draw directly on the enlarged 8×8 grid.
+
+- Left-drag paints pixels.
+- Right-drag erases pixels.
+- Clear or invert the complete graphic.
+- Duplicate it into the next empty position in the current bank.
+- Mirror horizontally or vertically.
+- Rotate left or right.
+- Shift one pixel up, down, left, or right.
+
+Changes immediately update the palette, repeated tile preview, BASIC data, screen palette, and every painted instance of that UDG on the current screen.
+
+### Repeated tile preview
+
+The 6×6 preview makes repeating edges and patterns easier to spot. Its INK and PAPER controls belong to the selected UDG, rather than the screen painter.
+
+Use it to check whether:
+
+- A texture joins cleanly at its left and right edges.
+- Top and bottom rows create unwanted seams.
+- A pattern becomes too busy when repeated.
+- The intended foreground and background colours work together.
+
+These colours are saved as part of the UDG design. They are defaults and do not restrict how the graphic can be coloured on a screen.
+
+### BASIC data export
+
+The editor continuously calculates the eight decimal bytes representing the selected UDG. It can also generate a complete BASIC listing for the current bank.
+
+The optional loader uses the traditional pattern:
+
+```basic
+FOR n=0 TO 167
+READ a: POKE USR "A"+n,a
+NEXT n
+```
+
+Use the copy buttons to place either the selected `DATA` statement or the current bank's complete listing on the clipboard.
+
+### Multi-screen designer
+
+Each project can contain multiple 32×24 Spectrum screens.
+
+- Create, duplicate, delete, and navigate between screens.
+- Give each screen its own default INK and PAPER.
+- Choose a UDG from the colour preview palette beside the canvas.
+- Override the current painting foreground and background without changing the UDG's saved defaults.
+- Change zoom from 1× to 4×.
+- Show or hide the cell grid.
+- Clear a complete screen.
+
+The UDG chooser responds to the zoom level: it stays broad when the canvas is small and becomes progressively narrower as the canvas grows.
+
+Every painted cell stores its bank, UDG letter, INK, and PAPER. A screen can therefore use Bank 1 A beside Bank 4 A and colour the two instances differently.
+
+### Screen tools
+
+The designer includes five placement modes:
+
+- **Paint:** left-drag to paint and right-drag to erase.
+- **Rectangle Fill:** drag between opposite corners to fill an area.
+- **Copy Region:** drag around a rectangular part of the screen.
+- **Paste Region:** click the destination for the copied region's top-left corner.
+- **Stamp:** repeatedly place the selected UDG without removing surrounding cells; right-drag still erases.
+
+The copied region is also included in saved project data, so it is available again after reloading a project.
+
+## Suggested workflow
+
+1. Enter a project name.
+2. Design the most commonly used graphics in Bank 1.
+3. Assign useful default colours and inspect each graphic in the 6×6 preview.
+4. Use Banks 2–4 for alternate animation frames, scene-specific graphics, or replacements for the same letter position.
+5. Create a screen and select its default INK and PAPER.
+6. Choose UDGs from the palette beside the screen and paint the layout.
+7. Add or duplicate screens as needed.
+8. Save a project JSON file before experimenting with major changes.
+9. Export a TAP and load it in an emulator for testing.
+10. Copy the BASIC interface instructions if the screens will be called from a larger program.
+
+## Useful design hints
+
+- Keep Bank 1 for graphics shared by most screens. Use later banks for scene-specific alternatives.
+- Use the same letter position across banks for related graphics—for example, A could hold four animation frames or four kinds of wall tile.
+- Blank UDGs are free in the TAP's packed tile data, so there is no need to fill every position.
+- Duplicate a screen before making a variation. This is useful for menus, animation states, and progressive map changes.
+- Use Copy Region for repeating rooms, borders, panels, and decorative structures.
+- Remember that Spectrum colour attributes apply to a complete 8×8 cell. Different INK or PAPER colours cannot occupy separate pixels within one cell without attribute clash.
+- Test on the intended Spectrum model or emulator. Timing, display borders, and 128 BASIC token behaviour can differ from a modern browser preview.
+
+## Saving and loading projects
+
+**Save Project** downloads a readable JSON file containing:
+
+- All four UDG banks and their pixel data.
+- Per-UDG default INK and PAPER colours.
+- Every screen and painted cell.
+- Each screen's preferred UDG bank and default colours.
+- The selected bank, UDG, screen, tools, zoom, grid state, and clipboard region.
+
+**Load Project** restores that file. The current project format is version 4. Older single-bank project files remain supported and are loaded into Bank 1; the other banks begin empty.
+
+Project JSON files are editable, but keeping their array dimensions intact is important. Invalid files are rejected rather than partially loaded.
+
+## TAP export
+
+**Download TAP** creates a real Spectrum tape image containing:
+
+1. An auto-running Sinclair BASIC loader.
+2. A compact Z80 machine-code renderer.
+3. Only the nonblank UDG definitions created across the four banks.
+4. A small lookup table preserving bank and letter relationships.
+5. A directory of compressed screens.
+6. The compressed screen data and colour attributes.
+
+The package loads at address `50000`. Its renderer entry point is `50016`.
+
+The TAP automatically draws screen 1. To draw another screen from BASIC:
+
+```basic
+LET s=2
+POKE 50000,s-1
+RANDOMIZE USR 50016
+```
+
+BASIC screen numbers begin at 1, while the renderer stores them from 0. The control byte at address `50000` performs that conversion through `s-1`.
+
+When a screen is drawn, the renderer:
+
+1. Finds the requested compressed screen.
+2. Reconstructs that screen's preferred UDG bank in the normal `USR "A"` area.
+3. Clears the Spectrum bitmap and attributes.
+4. Draws the screen directly from the packed UDG data.
+
+Direct drawing means one screen can mix UDGs from all four banks even though BASIC exposes only one A–U bank at a time.
+
+If the complete package would extend beyond address `65535`, export stops with an error. Remove screens or simplify densely painted layouts to reduce its size.
+
+## Spectrum compatibility notes
+
+The original 48K Spectrum provides 21 UDG positions corresponding to A–U. In 128 BASIC, the final two character codes are used by the `SPECTRUM` and `PLAY` tokens, so T and U are not normally available in the same way.
+
+The machine-code renderer draws bitmap data directly and can still use every exported tile. If a BASIC program intends to print UDGs T or U itself, test that behaviour in the exact BASIC mode being targeted.
+
+The exported loader reserves memory with `CLEAR 49999`, loads the package at `50000`, and calls the renderer at `50016`.
+
+## Source layout
+
+```text
+.
+├── index.html       HTML structure
+├── styles.css       Development stylesheet
+├── app.js           Editor, persistence, export, assembler, and renderer logic
+├── dist/            Minified website build
+└── README.md
+```
+
+The project intentionally has no runtime dependencies. The development version is plain HTML, CSS, and JavaScript.
+
+### Rebuilding `dist/`
+
+The current distribution uses Clean CSS for the stylesheet and Terser for JavaScript compression and identifier mangling:
+
+```sh
+cp index.html dist/index.html
+npx --yes clean-css-cli -o dist/styles.css styles.css
+npx --yes terser app.js \
+  --compress passes=3,unsafe_arrows=true \
+  --mangle \
+  --ecma 2017 \
+  --output dist/app.js
+```
+
+Minification is kept lightweight so the deployed editor starts quickly. Heavy control-flow obfuscation was deliberately avoided because it more than tripled the JavaScript size and slowed initialisation.
+
+## Release
+
+The current release is `v1.0.0`.
+
+The ready-to-deploy version is in `dist/`. The unminified source files remain the best place to study, modify, or contribute to the editor.
+
+## Project status
+
+This is an open-source project created and maintained by Keilan Knight. Bug reports, compatibility findings, workflow ideas, and improvements are welcome.
+
+Before redistributing modified versions, add an explicit licence file appropriate to the way you want the project to be reused; the repository currently identifies the project as open source but does not yet include a formal software licence.

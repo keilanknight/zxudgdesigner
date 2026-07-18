@@ -24,10 +24,11 @@
 
   <section class="panel collapsible-panel" data-panel-name="UDG Palette">
     <div class="panel-header">
-      <h2>21 UDGs</h2>
+      <h2>4 Banks × 21 UDGs</h2>
       <button class="panel-toggle" type="button" aria-expanded="true" title="Collapse panel">−</button>
     </div>
     <div class="panel-content">
+      <div id="editorBankTabs" class="bank-tabs" aria-label="UDG bank"></div>
       <div id="udgList" class="udg-list"></div>
     </div>
   </section>
@@ -97,7 +98,7 @@
         <h2>Selected UDG</h2>
         <textarea id="dataOutput" readonly></textarea>
 
-        <h2>All 21 UDGs / Listing</h2>
+          <h2>Current Bank / BASIC Listing</h2>
         <textarea id="allDataOutput" readonly></textarea>
 
         <p class="help">
@@ -204,8 +205,9 @@
 
       <div class="screen-udg-picker">
         <strong>Choose UDG (A–U)</strong>
+        <div id="screenBankTabs" class="bank-tabs" aria-label="Screen UDG bank"></div>
         <div id="screenUdgList" class="screen-udg-list"></div>
-        <p class="help">Click a UDG or press its letter key. Its saved colours become the current paint colours.</p>
+        <p class="help">Keys 1–4 select a bank; A–U select a UDG. Saved colours become the current paint colours.</p>
       </div>
     </div>
 
@@ -229,7 +231,7 @@
           <h2>Ready-to-load tape</h2>
           <p class="help">
             Builds a real Spectrum tape containing an auto-running BASIC loader
-            followed by the machine-code renderer, all 21 UDGs and every compressed screen.
+            followed by the machine-code renderer, all four UDG banks and every compressed screen.
           </p>
 
           <label>

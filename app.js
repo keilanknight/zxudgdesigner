@@ -1,6 +1,7 @@
 "use strict";
 
 const UDG_COUNT = 21;
+const UDG_BANK_COUNT = 4;
 const GRID_SIZE = 8;
 const SCREEN_COLS = 32;
 const SCREEN_ROWS = 24;
@@ -16,20 +17,31 @@ const spectrumColours = {
   White: "#ffffff"
 };
 
-const udgs = Array.from(
-  { length: UDG_COUNT },
-  () => Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0))
+const udgBanks = Array.from(
+  { length: UDG_BANK_COUNT },
+  () => Array.from(
+    { length: UDG_COUNT },
+    () => Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0))
+  )
 );
 
-const udgColours = Array.from(
-  { length: UDG_COUNT },
-  () => ({ ink: "White", paper: "Black" })
+const udgColourBanks = Array.from(
+  { length: UDG_BANK_COUNT },
+  () => Array.from(
+    { length: UDG_COUNT },
+    () => ({ ink: "White", paper: "Black" })
+  )
 );
 
-function createBlankScreen(defaultInk = "White", defaultPaper = "Black") {
+let selectedBank = 0;
+let udgs = udgBanks[selectedBank];
+let udgColours = udgColourBanks[selectedBank];
+
+function createBlankScreen(defaultInk = "White", defaultPaper = "Black", activeBank = 0) {
   return {
     defaultInk,
     defaultPaper,
+    activeBank,
     cells: Array.from(
       { length: SCREEN_ROWS },
       () => Array(SCREEN_COLS).fill(null)
@@ -60,7 +72,9 @@ let dragCurrent = null;
 let copiedRegion = null;
 
 const udgList = document.getElementById("udgList");
+const editorBankTabs = document.getElementById("editorBankTabs");
 const screenUdgList = document.getElementById("screenUdgList");
+const screenBankTabs = document.getElementById("screenBankTabs");
 const editor = document.getElementById("editor");
 const tilePreview = document.getElementById("tilePreview");
 const udgInkSelect = document.getElementById("udgInk");
@@ -124,9 +138,36 @@ function buildColourSelectors() {
 
 function selectUdgForScreen(index) {
   selectedUdg = index;
+  currentScreenObject().activeBank = selectedBank;
   foregroundSelect.value = udgColours[index].ink;
   backgroundSelect.value = udgColours[index].paper;
   refreshAll();
+}
+
+function selectBank(index, useForScreen = false) {
+  selectedBank = Math.max(0, Math.min(UDG_BANK_COUNT - 1, index));
+  udgs = udgBanks[selectedBank];
+  udgColours = udgColourBanks[selectedBank];
+
+  if (useForScreen) {
+    currentScreenObject().activeBank = selectedBank;
+    foregroundSelect.value = udgColours[selectedUdg].ink;
+    backgroundSelect.value = udgColours[selectedUdg].paper;
+  }
+
+  refreshAll();
+}
+
+function buildBankTabs(container, useForScreen) {
+  for (let index = 0; index < UDG_BANK_COUNT; index++) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "bank-tab";
+    button.dataset.bank = String(index);
+    button.textContent = "Bank " + (index + 1);
+    button.addEventListener("click", () => selectBank(index, useForScreen));
+    container.appendChild(button);
+  }
 }
 
 function buildScreenUdgList() {
@@ -335,6 +376,7 @@ function applyScreenAction(row, col, action) {
 
 function paintCell(row, col) {
   currentScreen()[row][col] = {
+    bank: selectedBank,
     udg: selectedUdg,
     foreground: foregroundSelect.value,
     background: backgroundSelect.value
@@ -407,6 +449,7 @@ function refreshScreenControls() {
 
   defaultInkSelect.value = currentScreenObject().defaultInk;
   defaultPaperSelect.value = currentScreenObject().defaultPaper;
+  selectBank(currentScreenObject().activeBank, true);
   refreshWholeScreen();
 }
 
@@ -414,6 +457,7 @@ function cloneScreen(screenObject) {
   return {
     defaultInk: screenObject.defaultInk,
     defaultPaper: screenObject.defaultPaper,
+    activeBank: screenObject.activeBank,
     cells: screenObject.cells.map((row) =>
       row.map((cell) => cloneCell(cell))
     )
@@ -557,7 +601,7 @@ function getUdgBytes(index) {
 function refreshDataOutput() {
   const key = String.fromCharCode(65 + selectedUdg);
   dataOutput.value =
-    "REM UDG " + key + "\n" +
+    "REM BANK " + (selectedBank + 1) + " UDG " + key + "\n" +
     "DATA " + getUdgBytes(selectedUdg).join(",");
 
   const dataLines = udgs.map((_, index) =>
@@ -569,7 +613,7 @@ function refreshDataOutput() {
 
   if (includePokeCheckbox.checked) {
     allDataOutput.value =
-      "10 REM LOAD 21 UDGs A TO U\n" +
+      "10 REM LOAD BANK " + (selectedBank + 1) + " - 21 UDGs A TO U\n" +
       "20 FOR n=0 TO 167\n" +
       "30 READ a: POKE USR \"A\"+n,a\n" +
       "40 NEXT n\n" +
@@ -593,7 +637,8 @@ function drawScreenCell(row, col) {
     return;
   }
 
-  const graphic = udgs[cell.udg];
+  const cellBank = Number.isInteger(cell.bank) ? cell.bank : 0;
+  const graphic = udgBanks[cellBank][cell.udg];
 
   context.fillStyle = spectrumColours[cell.background];
   context.fillRect(0, 0, canvas.width, canvas.height);
@@ -613,7 +658,11 @@ function refreshPaintedCopies(udgIndex) {
     for (let col = 0; col < SCREEN_COLS; col++) {
       const cell = currentScreen()[row][col];
 
-      if (cell !== null && cell.udg === udgIndex) {
+      if (
+        cell !== null &&
+        (Number.isInteger(cell.bank) ? cell.bank : 0) === selectedBank &&
+        cell.udg === udgIndex
+      ) {
         drawScreenCell(row, col);
       }
     }
@@ -622,7 +671,7 @@ function refreshPaintedCopies(udgIndex) {
 
 function refreshAll() {
   selectedLabel.textContent =
-    "UDG " + String.fromCharCode(65 + selectedUdg) +
+    "Bank " + (selectedBank + 1) + " · UDG " + String.fromCharCode(65 + selectedUdg) +
     " (" + (selectedUdg + 1) + " of " + UDG_COUNT + ")";
 
   udgList.querySelectorAll(".udg-choice").forEach((button, index) => {
@@ -636,6 +685,10 @@ function refreshAll() {
   screenUdgList.querySelectorAll(".screen-udg-choice").forEach((button, index) => {
     button.classList.toggle("selected", index === selectedUdg);
     refreshScreenUdgPreview(index);
+  });
+
+  document.querySelectorAll(".bank-tab").forEach((button) => {
+    button.classList.toggle("active", Number(button.dataset.bank) === selectedBank);
   });
 
   refreshEditor();
@@ -843,6 +896,12 @@ document.addEventListener("keydown", (event) => {
 
   const index = event.key.toUpperCase().charCodeAt(0) - 65;
 
+  if (event.key >= "1" && event.key <= String(UDG_BANK_COUNT)) {
+    event.preventDefault();
+    selectBank(Number(event.key) - 1, true);
+    return;
+  }
+
   if (index >= 0 && index < UDG_COUNT) {
     event.preventDefault();
     selectUdgForScreen(index);
@@ -873,7 +932,8 @@ document.getElementById("nextScreen").addEventListener("click", () => {
 document.getElementById("newScreen").addEventListener("click", () => {
   screens.push(createBlankScreen(
     currentScreenObject().defaultInk,
-    currentScreenObject().defaultPaper
+    currentScreenObject().defaultPaper,
+    selectedBank
   ));
   selectedScreen = screens.length - 1;
   refreshScreenControls();
@@ -891,7 +951,8 @@ document.getElementById("deleteScreen").addEventListener("click", () => {
   if (screens.length === 1) {
     screens[0] = createBlankScreen(
       currentScreenObject().defaultInk,
-      currentScreenObject().defaultPaper
+      currentScreenObject().defaultPaper,
+      selectedBank
     );
     refreshScreenControls();
     showStatus("Only screen cleared");
@@ -928,12 +989,17 @@ function safeProjectFilename(name) {
 function getProjectData() {
   return {
     format: "zx-spectrum-udg-editor-project",
-    version: 3,
+    version: 4,
     projectName: projectNameInput.value.trim() || "My Spectrum Graphics",
     savedAt: new Date().toISOString(),
+    selectedBank,
     selectedUdg,
-    udgs: udgs.map((grid) => cloneGrid(grid)),
-    udgColours: udgColours.map((colours) => ({ ...colours })),
+    udgBanks: udgBanks.map((bank) => bank.map((grid) => cloneGrid(grid))),
+    udgColourBanks: udgColourBanks.map((bank) =>
+      bank.map((colours) => ({ ...colours }))
+    ),
+    udgs: udgBanks[0].map((grid) => cloneGrid(grid)),
+    udgColours: udgColourBanks[0].map((colours) => ({ ...colours })),
     selectedScreen,
     screens: screens.map((screenObject) => cloneScreen(screenObject)),
     settings: {
@@ -968,11 +1034,15 @@ function saveProjectFile() {
 }
 
 function validateProjectData(project) {
+  const savedBanks = Array.isArray(project && project.udgBanks)
+    ? project.udgBanks
+    : [project && project.udgs];
+
   if (
     !project ||
     project.format !== "zx-spectrum-udg-editor-project" ||
-    !Array.isArray(project.udgs) ||
-    project.udgs.length !== UDG_COUNT ||
+    !savedBanks.length ||
+    savedBanks.length > UDG_BANK_COUNT ||
     (
       !Array.isArray(project.screens) &&
       (!Array.isArray(project.screen) || project.screen.length !== SCREEN_ROWS)
@@ -981,15 +1051,21 @@ function validateProjectData(project) {
     throw new Error("This is not a valid ZX Spectrum UDG Editor project.");
   }
 
-  project.udgs.forEach((grid) => {
-    if (!Array.isArray(grid) || grid.length !== GRID_SIZE) {
-      throw new Error("The project contains an invalid UDG.");
+  savedBanks.forEach((bank) => {
+    if (!Array.isArray(bank) || bank.length !== UDG_COUNT) {
+      throw new Error("The project contains an invalid UDG bank.");
     }
 
-    grid.forEach((row) => {
-      if (!Array.isArray(row) || row.length !== GRID_SIZE) {
-        throw new Error("The project contains an invalid UDG row.");
+    bank.forEach((grid) => {
+      if (!Array.isArray(grid) || grid.length !== GRID_SIZE) {
+        throw new Error("The project contains an invalid UDG.");
       }
+
+      grid.forEach((row) => {
+        if (!Array.isArray(row) || row.length !== GRID_SIZE) {
+          throw new Error("The project contains an invalid UDG row.");
+        }
+      });
     });
   });
 
@@ -1026,23 +1102,33 @@ function loadProjectData(project) {
       ? project.projectName
       : "My Spectrum Graphics";
 
-  for (let index = 0; index < UDG_COUNT; index++) {
-    udgs[index] = project.udgs[index].map((row) =>
-      row.map((pixel) => pixel ? 1 : 0)
-    );
+  const savedBanks = Array.isArray(project.udgBanks)
+    ? project.udgBanks
+    : [project.udgs];
+  const savedColourBanks = Array.isArray(project.udgColourBanks)
+    ? project.udgColourBanks
+    : [project.udgColours];
 
-    const savedColours = Array.isArray(project.udgColours)
-      ? project.udgColours[index]
-      : null;
+  for (let bank = 0; bank < UDG_BANK_COUNT; bank++) {
+    for (let index = 0; index < UDG_COUNT; index++) {
+      const savedGrid = savedBanks[bank] && savedBanks[bank][index];
+      udgBanks[bank][index] = savedGrid
+        ? savedGrid.map((row) => row.map((pixel) => pixel ? 1 : 0))
+        : blankGrid();
 
-    udgColours[index] = {
-      ink: savedColours && spectrumColours[savedColours.ink]
-        ? savedColours.ink
-        : "White",
-      paper: savedColours && spectrumColours[savedColours.paper]
-        ? savedColours.paper
-        : "Black"
-    };
+      const savedColours = savedColourBanks[bank]
+        ? savedColourBanks[bank][index]
+        : null;
+
+      udgColourBanks[bank][index] = {
+        ink: savedColours && spectrumColours[savedColours.ink]
+          ? savedColours.ink
+          : "White",
+        paper: savedColours && spectrumColours[savedColours.paper]
+          ? savedColours.paper
+          : "Black"
+      };
+    }
   }
 
   const savedScreens = Array.isArray(project.screens)
@@ -1054,7 +1140,10 @@ function loadProjectData(project) {
   savedScreens.forEach((savedScreen) => {
     const loadedScreen = createBlankScreen(
       spectrumColours[savedScreen.defaultInk] ? savedScreen.defaultInk : "White",
-      spectrumColours[savedScreen.defaultPaper] ? savedScreen.defaultPaper : "Black"
+      spectrumColours[savedScreen.defaultPaper] ? savedScreen.defaultPaper : "Black",
+      Number.isInteger(savedScreen.activeBank)
+        ? Math.max(0, Math.min(UDG_BANK_COUNT - 1, savedScreen.activeBank))
+        : 0
     );
 
     for (let row = 0; row < SCREEN_ROWS; row++) {
@@ -1071,6 +1160,9 @@ function loadProjectData(project) {
           loadedScreen.cells[row][col] = null;
         } else {
           loadedScreen.cells[row][col] = {
+            bank: Number.isInteger(cell.bank)
+              ? Math.max(0, Math.min(UDG_BANK_COUNT - 1, cell.bank))
+              : 0,
             udg: cell.udg,
             foreground: spectrumColours[cell.foreground]
               ? cell.foreground
@@ -1093,6 +1185,12 @@ function loadProjectData(project) {
   selectedUdg = Number.isInteger(project.selectedUdg)
     ? Math.max(0, Math.min(UDG_COUNT - 1, project.selectedUdg))
     : 0;
+
+  selectedBank = Number.isInteger(project.selectedBank)
+    ? Math.max(0, Math.min(UDG_BANK_COUNT - 1, project.selectedBank))
+    : screens[selectedScreen].activeBank;
+  udgs = udgBanks[selectedBank];
+  udgColours = udgColourBanks[selectedBank];
 
   const settings = project.settings || {};
 
@@ -1327,23 +1425,12 @@ function createAssembler() {
 }
 
 function buildRenderer(
-  udgAddress,
+  bankDataAddress,
   directoryAddress,
   screenDataAddress,
-  screenCount,
-  exportedUdgCount
+  screenCount
 ) {
   const asm = createAssembler();
-
-  // Install all UDG definitions at USR "A" (65368).
-  asm.emit(0x21); asm.word(udgAddress);       // LD HL,udgAddress
-  asm.emit(0x11); asm.word(65368);            // LD DE,65368
-  asm.emit(0x01); asm.word(exportedUdgCount * 8); // LD BC,packed UDG bytes
-  asm.emit(0x78);                                 // LD A,B
-  asm.emit(0xB1);                                 // OR C
-  asm.relative(0x28, "skipUdgInstall");            // JR Z,skipUdgInstall
-  asm.emit(0xED, 0xB0);                           // LDIR
-  asm.label("skipUdgInstall");
 
   // Find selected screen through its two-byte directory offset.
   asm.emit(0x3A); asm.word(TAP_CONTROL_ADDRESS); // LD A,(control)
@@ -1360,9 +1447,32 @@ function buildRenderer(
   asm.emit(0x21); asm.word(screenDataAddress);    // LD HL,data
   asm.emit(0x19);                                 // ADD HL,DE
 
-  // Read screen default attribute, then clear bitmap and attributes.
+  // Read the default attribute and preferred BASIC UDG bank.
   asm.emit(0x7E);                                 // LD A,(HL)
   asm.emit(0x23);                                 // INC HL
+  asm.emit(0xF5);                                 // PUSH AF
+  asm.emit(0x7E);                                 // LD A,(HL) bank
+  asm.emit(0x23);                                 // INC HL
+  asm.emit(0xE5);                                 // PUSH HL (stream)
+
+  // Source = bankDataAddress + bank*168.
+  asm.emit(0x21); asm.word(bankDataAddress);       // LD HL,bank data
+  asm.emit(0xB7);                                 // OR A
+  asm.relative(0x28, "installBank");               // JR Z,installBank
+  asm.emit(0x11); asm.word(UDG_COUNT * 8);         // LD DE,168
+  asm.label("findBank");
+  asm.emit(0x19);                                 // ADD HL,DE
+  asm.emit(0x3D);                                 // DEC A
+  asm.relative(0x20, "findBank");                  // JR NZ,findBank
+
+  asm.label("installBank");
+  asm.emit(0x11); asm.word(65368);                 // LD DE,USR "A"
+  asm.emit(0x01); asm.word(UDG_COUNT * 8);         // LD BC,168
+  asm.emit(0xED, 0xB0);                           // LDIR
+  asm.emit(0xE1);                                 // POP HL (stream)
+  asm.emit(0xF1);                                 // POP AF (attribute)
+
+  // Preserve the stream and attribute while clearing the screen.
   asm.emit(0xE5);                                 // PUSH HL
   asm.emit(0xF5);                                 // PUSH AF
 
@@ -1451,12 +1561,11 @@ function buildRenderer(
   asm.emit(0x80);                                 // ADD A,B (x)
   asm.emit(0x5F);                                 // LD E,A
 
-  // Source UDG = udgAddress + tile*8.
-  asm.emit(0x79);                                 // LD A,C
-  asm.emit(0x07, 0x07, 0x07);                     // RLCA x3
-  asm.emit(0x6F);                                 // LD L,A
+  // Source UDG = bankDataAddress + tile*8.
+  asm.emit(0x69);                                 // LD L,C
   asm.emit(0x26, 0);                              // LD H,0
-  asm.emit(0x01); asm.word(udgAddress);           // LD BC,udgAddress
+  asm.emit(0x29, 0x29, 0x29);                     // ADD HL,HL x3
+  asm.emit(0x01); asm.word(bankDataAddress);      // LD BC,bank data
   asm.emit(0x09);                                 // ADD HL,BC
   asm.emit(0x06, 8);                              // LD B,8
 
@@ -1478,9 +1587,10 @@ function colourAttribute(ink, paper) {
   );
 }
 
-function compressScreenForTap(screenObject, packedTileMap) {
+function compressScreenForTap(screenObject) {
   const output = [
-    colourAttribute(screenObject.defaultInk, screenObject.defaultPaper)
+    colourAttribute(screenObject.defaultInk, screenObject.defaultPaper),
+    screenObject.activeBank
   ];
 
   let position = 0;
@@ -1520,10 +1630,11 @@ function compressScreenForTap(screenObject, packedTileMap) {
     output.push(...littleEndianWord(skip), run.length);
 
     run.forEach((cell) => {
-      const packedTile = packedTileMap[cell.udg];
+      const bank = Number.isInteger(cell.bank) ? cell.bank : 0;
+      const tile = bank * UDG_COUNT + cell.udg;
 
       output.push(
-        packedTile === undefined ? 255 : packedTile,
+        tile,
         colourAttribute(cell.foreground, cell.background)
       );
     });
@@ -1535,38 +1646,19 @@ function compressScreenForTap(screenObject, packedTileMap) {
   return output;
 }
 
-
-function isBlankUdg(index) {
-  return getUdgBytes(index).every((byte) => byte === 0);
-}
-
-function buildPackedUdgSet() {
-  const packedTileMap = {};
-  const packedUdgBytes = [];
-  const exportedIndexes = [];
-
-  for (let index = 0; index < UDG_COUNT; index++) {
-    if (isBlankUdg(index)) {
-      continue;
-    }
-
-    packedTileMap[index] = exportedIndexes.length;
-    exportedIndexes.push(index);
-    packedUdgBytes.push(...getUdgBytes(index));
-  }
-
-  return {
-    packedTileMap,
-    packedUdgBytes,
-    exportedIndexes
-  };
-}
-
 function buildGraphicsPackage() {
-  const packedUdgs = buildPackedUdgSet();
-  const compressedScreens = screens.map((screenObject) =>
-    compressScreenForTap(screenObject, packedUdgs.packedTileMap)
+  const bankBytes = udgBanks.flatMap((bank) =>
+    bank.flatMap((grid) => grid.map((row) => {
+      let value = 0;
+
+      for (let col = 0; col < GRID_SIZE; col++) {
+        if (row[col]) value |= 1 << (7 - col);
+      }
+
+      return value;
+    }))
   );
+  const compressedScreens = screens.map(compressScreenForTap);
   const directoryLength = screens.length * 2;
 
   // First build gets the renderer's fixed size.
@@ -1574,23 +1666,21 @@ function buildGraphicsPackage() {
     0,
     0,
     0,
-    screens.length,
-    packedUdgs.exportedIndexes.length
+    screens.length
   );
-  const udgOffset = TAP_RENDERER_OFFSET + placeholderRenderer.length;
-  const directoryOffset = udgOffset + packedUdgs.packedUdgBytes.length;
+  const bankDataOffset = TAP_RENDERER_OFFSET + placeholderRenderer.length;
+  const directoryOffset = bankDataOffset + bankBytes.length;
   const dataOffset = directoryOffset + directoryLength;
 
-  const udgAddress = TAP_LOAD_ADDRESS + udgOffset;
+  const bankDataAddress = TAP_LOAD_ADDRESS + bankDataOffset;
   const directoryAddress = TAP_LOAD_ADDRESS + directoryOffset;
   const screenDataAddress = TAP_LOAD_ADDRESS + dataOffset;
 
   const renderer = buildRenderer(
-    udgAddress,
+    bankDataAddress,
     directoryAddress,
     screenDataAddress,
-    screens.length,
-    packedUdgs.exportedIndexes.length
+    screens.length
   );
 
   const directory = [];
@@ -1606,13 +1696,14 @@ function buildGraphicsPackage() {
   header[1] = 90; // Z
   header[2] = 88; // X
   header[3] = 71; // G
-  header[4] = 1;  // Package version.
+  header[4] = 2;  // Package version.
   header[5] = screens.length;
+  header[6] = UDG_BANK_COUNT;
 
   const packageBytes = [
     ...header,
     ...renderer,
-    ...packedUdgs.packedUdgBytes,
+    ...bankBytes,
     ...directory,
     ...compressedScreens.flat()
   ];
@@ -1627,8 +1718,8 @@ function buildGraphicsPackage() {
 
   return {
     packageBytes,
-    exportedUdgCount: packedUdgs.exportedIndexes.length,
-    removedBlankUdgCount: UDG_COUNT - packedUdgs.exportedIndexes.length
+    exportedUdgCount: UDG_BANK_COUNT * UDG_COUNT,
+    bankCount: UDG_BANK_COUNT
   };
 }
 
@@ -1654,7 +1745,7 @@ function buildTapFile() {
     packageLength: packageBytes.length,
     basicLength: basicBytes.length,
     exportedUdgCount: graphicsPackage.exportedUdgCount,
-    removedBlankUdgCount: graphicsPackage.removedBlankUdgCount,
+    bankCount: graphicsPackage.bankCount,
     name
   };
 }
@@ -1705,11 +1796,9 @@ function exportTapFile() {
       tap.exportedUdgCount +
       " UDG" +
       (tap.exportedUdgCount === 1 ? "" : "s") +
-      " exported; " +
-      tap.removedBlankUdgCount +
-      " blank slot" +
-      (tap.removedBlankUdgCount === 1 ? "" : "s") +
-      " omitted.";
+      " across " +
+      tap.bankCount +
+      " banks exported.";
   } catch (error) {
     tapStatus.textContent = error.message || "The TAP could not be built.";
   }
@@ -1736,6 +1825,8 @@ function buildCollapsiblePanels() {
 
 buildCollapsiblePanels();
 buildColourSelectors();
+buildBankTabs(editorBankTabs, false);
+buildBankTabs(screenBankTabs, true);
 buildUdgList();
 buildScreenUdgList();
 buildEditor();

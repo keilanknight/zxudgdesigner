@@ -138,6 +138,23 @@ h2 {
   width: max-content;
 }
 
+.bank-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.bank-tab {
+  padding: 5px 9px;
+  font-size: 12px;
+}
+
+.bank-tab.active {
+  background: #222222;
+  color: white;
+}
+
 .udg-choice {
   width: 38px;
   height: 44px;

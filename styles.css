@@ -3,6 +3,7 @@
   --border: #333333;
   --selected: #ffcc00;
   --screen-cell-size: 16px;
+  --screen-udg-picker-width: 440px;
   --screen-grid: 1px;
 }
 
@@ -238,7 +239,8 @@ h2 {
 }
 
 .screen-udg-picker {
-  flex: 0 0 190px;
+  flex: 1 1 var(--screen-udg-picker-width);
+  min-width: 68px;
   padding: 10px;
   border: 1px solid #999999;
   background: #dddddd;
@@ -246,10 +248,9 @@ h2 {
 
 .screen-udg-list {
   display: grid;
-  grid-template-columns: repeat(3, 54px);
+  grid-template-columns: repeat(auto-fit, 54px);
   gap: 7px;
-  width: max-content;
-  max-width: 100%;
+  width: 100%;
   margin-top: 8px;
 }
 
@@ -361,7 +362,7 @@ label input {
 }
 
 .screen-wrap {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
   overflow: auto;
   max-width: 100%;
@@ -443,10 +444,6 @@ label input {
 
   .udg-list {
     grid-template-columns: repeat(6, 38px);
-  }
-
-  .screen-udg-list {
-    grid-template-columns: repeat(4, 54px);
   }
 
   .screen-workspace {

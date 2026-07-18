@@ -792,8 +792,24 @@ document.getElementById("toggleGrid").addEventListener("click", (event) => {
   event.currentTarget.textContent = off ? "Grid On" : "Grid Off";
 });
 
+function applyScreenZoom(zoomValue) {
+  const pickerWidths = {
+    "8": "684px",
+    "12": "562px",
+    "16": "440px",
+    "24": "318px",
+    "32": "196px"
+  };
+
+  document.documentElement.style.setProperty("--screen-cell-size", zoomValue + "px");
+  document.documentElement.style.setProperty(
+    "--screen-udg-picker-width",
+    pickerWidths[zoomValue] || pickerWidths["16"]
+  );
+}
+
 document.getElementById("zoom").addEventListener("change", (event) => {
-  document.documentElement.style.setProperty("--screen-cell-size", event.target.value + "px");
+  applyScreenZoom(event.target.value);
 });
 
 includePokeCheckbox.addEventListener("change", refreshDataOutput);
@@ -1093,10 +1109,7 @@ function loadProjectData(project) {
     : "16";
 
   document.getElementById("zoom").value = zoomValue;
-  document.documentElement.style.setProperty(
-    "--screen-cell-size",
-    zoomValue + "px"
-  );
+  applyScreenZoom(zoomValue);
 
   screen.classList.toggle("grid-off", Boolean(settings.gridOff));
   document.getElementById("toggleGrid").textContent =

@@ -219,6 +219,66 @@ h2 {
   image-rendering: pixelated;
 }
 
+.preview-colour-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.preview-colour-row label {
+  flex: 1;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.preview-colour-row select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.screen-udg-picker {
+  margin-bottom: 14px;
+  padding: 10px;
+  border: 1px solid #999999;
+  background: #dddddd;
+}
+
+.screen-udg-list {
+  display: grid;
+  grid-template-columns: repeat(11, 54px);
+  gap: 7px;
+  width: max-content;
+  max-width: 100%;
+  margin-top: 8px;
+}
+
+.screen-udg-choice {
+  width: 54px;
+  height: 66px;
+  padding: 2px;
+  border: 2px solid #555555;
+}
+
+.screen-udg-choice.selected {
+  border: 4px solid var(--selected);
+  padding: 0;
+}
+
+.screen-udg-choice canvas {
+  display: block;
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+}
+
+.screen-udg-choice span {
+  display: block;
+  font-size: 11px;
+  line-height: 12px;
+  text-align: center;
+}
+
 .tool-groups {
   display: grid;
   gap: 10px;
@@ -375,6 +435,10 @@ label input {
 
   .udg-list {
     grid-template-columns: repeat(6, 38px);
+  }
+
+  .screen-udg-list {
+    grid-template-columns: repeat(4, 54px);
   }
 
   #editor {

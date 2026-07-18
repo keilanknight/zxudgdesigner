@@ -108,13 +108,24 @@
 
       <div class="tile-preview-column">
         <h2>6 × 6 Tile Preview</h2>
+        <div class="preview-colour-row">
+          <label>
+            UDG INK
+            <select id="udgInk"></select>
+          </label>
+
+          <label>
+            UDG PAPER
+            <select id="udgPaper"></select>
+          </label>
+        </div>
         <canvas
           id="tilePreview"
           width="48"
           height="48"
           aria-label="Repeated preview of the selected UDG"
         ></canvas>
-        <p class="help">Repeated using the selected foreground and background colours.</p>
+        <p class="help">These preview colours are saved with this UDG.</p>
       </div>
     </div>
     </div>
@@ -167,6 +178,12 @@
           <option value="32">4×</option>
         </select>
       </label>
+    </div>
+
+    <div class="screen-udg-picker">
+      <strong>Choose UDG (A–U)</strong>
+      <div id="screenUdgList" class="screen-udg-list"></div>
+      <p class="help">Click a UDG or press its letter key. Its saved colours become the current paint colours.</p>
     </div>
 
     <div class="tool-groups">

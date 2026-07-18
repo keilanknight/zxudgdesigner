@@ -21,6 +21,11 @@ const udgs = Array.from(
   () => Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0))
 );
 
+const udgColours = Array.from(
+  { length: UDG_COUNT },
+  () => ({ ink: "White", paper: "Black" })
+);
+
 function createBlankScreen(defaultInk = "White", defaultPaper = "Black") {
   return {
     defaultInk,
@@ -55,8 +60,11 @@ let dragCurrent = null;
 let copiedRegion = null;
 
 const udgList = document.getElementById("udgList");
+const screenUdgList = document.getElementById("screenUdgList");
 const editor = document.getElementById("editor");
 const tilePreview = document.getElementById("tilePreview");
+const udgInkSelect = document.getElementById("udgInk");
+const udgPaperSelect = document.getElementById("udgPaper");
 const screen = document.getElementById("screen");
 const selectedLabel = document.getElementById("selectedLabel");
 const dataOutput = document.getElementById("dataOutput");
@@ -100,14 +108,46 @@ function buildColourSelectors() {
   Object.keys(spectrumColours).forEach((name) => {
     foregroundSelect.appendChild(new Option(name, name));
     backgroundSelect.appendChild(new Option(name, name));
+    udgInkSelect.appendChild(new Option(name, name));
+    udgPaperSelect.appendChild(new Option(name, name));
     defaultInkSelect.appendChild(new Option(name, name));
     defaultPaperSelect.appendChild(new Option(name, name));
   });
 
   foregroundSelect.value = "White";
   backgroundSelect.value = "Black";
+  udgInkSelect.value = "White";
+  udgPaperSelect.value = "Black";
   defaultInkSelect.value = "White";
   defaultPaperSelect.value = "Black";
+}
+
+function selectUdgForScreen(index) {
+  selectedUdg = index;
+  foregroundSelect.value = udgColours[index].ink;
+  backgroundSelect.value = udgColours[index].paper;
+  refreshAll();
+}
+
+function buildScreenUdgList() {
+  for (let index = 0; index < UDG_COUNT; index++) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "screen-udg-choice";
+    button.dataset.index = String(index);
+    button.title = "Select UDG " + String.fromCharCode(65 + index);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 8;
+    canvas.height = 8;
+
+    const label = document.createElement("span");
+    label.textContent = String.fromCharCode(65 + index);
+
+    button.append(canvas, label);
+    button.addEventListener("click", () => selectUdgForScreen(index));
+    screenUdgList.appendChild(button);
+  }
 }
 
 function buildUdgList() {
@@ -420,6 +460,7 @@ function setEditorPixel(row, col, value) {
   refreshEditor();
   refreshUdgPreview(selectedUdg);
   refreshTilePreview();
+  refreshScreenUdgPreview(selectedUdg);
   refreshDataOutput();
   refreshPaintedCopies(selectedUdg);
 }
@@ -454,11 +495,12 @@ function refreshUdgPreview(index) {
 function refreshTilePreview() {
   const context = tilePreview.getContext("2d");
   const graphic = udgs[selectedUdg];
+  const colours = udgColours[selectedUdg];
 
   context.imageSmoothingEnabled = false;
-  context.fillStyle = spectrumColours[backgroundSelect.value];
+  context.fillStyle = spectrumColours[colours.paper];
   context.fillRect(0, 0, tilePreview.width, tilePreview.height);
-  context.fillStyle = spectrumColours[foregroundSelect.value];
+  context.fillStyle = spectrumColours[colours.ink];
 
   for (let tileRow = 0; tileRow < 6; tileRow++) {
     for (let tileCol = 0; tileCol < 6; tileCol++) {
@@ -473,6 +515,26 @@ function refreshTilePreview() {
             );
           }
         }
+      }
+    }
+  }
+}
+
+function refreshScreenUdgPreview(index) {
+  const button = screenUdgList.querySelector(`[data-index="${index}"]`);
+  const canvas = button.querySelector("canvas");
+  const context = canvas.getContext("2d");
+  const colours = udgColours[index];
+
+  context.imageSmoothingEnabled = false;
+  context.fillStyle = spectrumColours[colours.paper];
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = spectrumColours[colours.ink];
+
+  for (let row = 0; row < GRID_SIZE; row++) {
+    for (let col = 0; col < GRID_SIZE; col++) {
+      if (udgs[index][row][col]) {
+        context.fillRect(col, row, 1, 1);
       }
     }
   }
@@ -568,6 +630,14 @@ function refreshAll() {
     refreshUdgPreview(index);
   });
 
+  udgInkSelect.value = udgColours[selectedUdg].ink;
+  udgPaperSelect.value = udgColours[selectedUdg].paper;
+
+  screenUdgList.querySelectorAll(".screen-udg-choice").forEach((button, index) => {
+    button.classList.toggle("selected", index === selectedUdg);
+    refreshScreenUdgPreview(index);
+  });
+
   refreshEditor();
   refreshTilePreview();
   refreshDataOutput();
@@ -632,6 +702,7 @@ document.getElementById("duplicateUdg").addEventListener("click", () => {
   }
 
   udgs[target] = cloneGrid(udgs[selectedUdg]);
+  udgColours[target] = { ...udgColours[selectedUdg] };
   selectedUdg = target;
   refreshAll();
   refreshPaintedCopies(target);
@@ -726,8 +797,41 @@ document.getElementById("zoom").addEventListener("change", (event) => {
 });
 
 includePokeCheckbox.addEventListener("change", refreshDataOutput);
-foregroundSelect.addEventListener("change", refreshTilePreview);
-backgroundSelect.addEventListener("change", refreshTilePreview);
+udgInkSelect.addEventListener("change", () => {
+  udgColours[selectedUdg].ink = udgInkSelect.value;
+  refreshTilePreview();
+  refreshScreenUdgPreview(selectedUdg);
+});
+
+udgPaperSelect.addEventListener("change", () => {
+  udgColours[selectedUdg].paper = udgPaperSelect.value;
+  refreshTilePreview();
+  refreshScreenUdgPreview(selectedUdg);
+});
+
+document.addEventListener("keydown", (event) => {
+  const target = event.target;
+
+  if (
+    event.ctrlKey ||
+    event.metaKey ||
+    event.altKey ||
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target.isContentEditable ||
+    event.key.length !== 1
+  ) {
+    return;
+  }
+
+  const index = event.key.toUpperCase().charCodeAt(0) - 65;
+
+  if (index >= 0 && index < UDG_COUNT) {
+    event.preventDefault();
+    selectUdgForScreen(index);
+  }
+});
 
 defaultInkSelect.addEventListener("change", () => {
   currentScreenObject().defaultInk = defaultInkSelect.value;
@@ -808,11 +912,12 @@ function safeProjectFilename(name) {
 function getProjectData() {
   return {
     format: "zx-spectrum-udg-editor-project",
-    version: 2,
+    version: 3,
     projectName: projectNameInput.value.trim() || "My Spectrum Graphics",
     savedAt: new Date().toISOString(),
     selectedUdg,
     udgs: udgs.map((grid) => cloneGrid(grid)),
+    udgColours: udgColours.map((colours) => ({ ...colours })),
     selectedScreen,
     screens: screens.map((screenObject) => cloneScreen(screenObject)),
     settings: {
@@ -909,6 +1014,19 @@ function loadProjectData(project) {
     udgs[index] = project.udgs[index].map((row) =>
       row.map((pixel) => pixel ? 1 : 0)
     );
+
+    const savedColours = Array.isArray(project.udgColours)
+      ? project.udgColours[index]
+      : null;
+
+    udgColours[index] = {
+      ink: savedColours && spectrumColours[savedColours.ink]
+        ? savedColours.ink
+        : "White",
+      paper: savedColours && spectrumColours[savedColours.paper]
+        ? savedColours.paper
+        : "Black"
+    };
   }
 
   const savedScreens = Array.isArray(project.screens)
@@ -1606,6 +1724,7 @@ function buildCollapsiblePanels() {
 buildCollapsiblePanels();
 buildColourSelectors();
 buildUdgList();
+buildScreenUdgList();
 buildEditor();
 buildScreen();
 refreshAll();

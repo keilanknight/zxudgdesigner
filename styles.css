@@ -238,7 +238,7 @@ h2 {
 }
 
 .screen-udg-picker {
-  margin-bottom: 14px;
+  flex: 0 0 190px;
   padding: 10px;
   border: 1px solid #999999;
   background: #dddddd;
@@ -246,7 +246,7 @@ h2 {
 
 .screen-udg-list {
   display: grid;
-  grid-template-columns: repeat(11, 54px);
+  grid-template-columns: repeat(3, 54px);
   gap: 7px;
   width: max-content;
   max-width: 100%;
@@ -354,7 +354,15 @@ label input {
   margin-top: 5px;
 }
 
+.screen-workspace {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
 .screen-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: auto;
   max-width: 100%;
   padding: 4px 0 10px;
@@ -439,6 +447,15 @@ label input {
 
   .screen-udg-list {
     grid-template-columns: repeat(4, 54px);
+  }
+
+  .screen-workspace {
+    flex-direction: column;
+  }
+
+  .screen-udg-picker {
+    flex-basis: auto;
+    width: 100%;
   }
 
   #editor {

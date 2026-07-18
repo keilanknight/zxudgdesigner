@@ -1,0 +1,2175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZX Spectrum UDG Graphics Editor</title>
+  <style>
+    :root {
+      --panel: #eeeeee;
+      --border: #333333;
+      --selected: #ffcc00;
+      --screen-cell-size: 16px;
+      --screen-grid: 1px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 18px;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #d7d7d7;
+      color: #111111;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .project-bar {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .project-name-field input {
+      display: block;
+      min-width: 220px;
+      margin-top: 5px;
+      padding: 7px 10px;
+      font-size: 14px;
+      border: 1px solid #444444;
+      background: white;
+    }
+
+    .hidden-file-input {
+      display: none;
+    }
+
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0;
+      font-weight: normal;
+    }
+
+    .check-row input {
+      min-width: auto;
+      margin: 0;
+    }
+
+    .screen-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+      padding: 9px;
+      border: 1px solid #888888;
+      background: #dddddd;
+    }
+
+    .screen-number {
+      min-width: 92px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .panel {
+      margin-bottom: 18px;
+      padding: 14px;
+      border: 2px solid var(--border);
+      background: var(--panel);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: -4px 0 12px;
+    }
+
+    .panel-header h2 {
+      margin: 0;
+    }
+
+    .panel-toggle {
+      width: 32px;
+      height: 28px;
+      padding: 0;
+      font-size: 20px;
+      font-weight: bold;
+      line-height: 24px;
+      border: 2px solid #444444;
+      background: white;
+    }
+
+    .panel.collapsed {
+      padding-bottom: 10px;
+    }
+
+    .panel.collapsed .panel-header {
+      margin-bottom: 0;
+    }
+
+    .panel-content[hidden] {
+      display: none;
+    }
+
+    .udg-list {
+      display: grid;
+      grid-template-columns: repeat(11, 38px);
+      gap: 7px;
+      width: max-content;
+    }
+
+    .udg-choice {
+      width: 38px;
+      height: 44px;
+      padding: 2px;
+      border: 2px solid #555555;
+      background: white;
+      cursor: pointer;
+    }
+
+    .udg-choice.selected {
+      border: 4px solid var(--selected);
+      padding: 0;
+    }
+
+    .udg-choice canvas {
+      display: block;
+      width: 36px;
+      height: 18px;
+      image-rendering: pixelated;
+      background: white;
+    }
+
+    .udg-choice span {
+      display: block;
+      margin-top: 3px;
+      font-size: 11px;
+      line-height: 14px;
+      text-align: center;
+    }
+
+    .workspace {
+      display: flex;
+      gap: 22px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    #editor {
+      display: grid;
+      grid-template-columns: repeat(8, 38px);
+      grid-template-rows: repeat(8, 38px);
+      gap: 1px;
+      padding: 1px;
+      background: #777777;
+      border: 3px solid #222222;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .editor-pixel {
+      width: 38px;
+      height: 38px;
+      background: white;
+      cursor: crosshair;
+    }
+
+    .editor-pixel.on {
+      background: black;
+    }
+
+    .controls {
+      min-width: 330px;
+      max-width: 600px;
+      flex: 1;
+    }
+
+    .tool-groups {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .tool-group {
+      padding: 10px;
+      border: 1px solid #999999;
+      background: #dddddd;
+    }
+
+    .tool-group strong {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 13px;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    button,
+    select,
+    input[type="number"] {
+      padding: 7px 10px;
+      font-size: 14px;
+      border: 1px solid #444444;
+      background: white;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button.active {
+      background: #222222;
+      color: white;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 62px;
+      padding: 9px;
+      resize: vertical;
+      font-family: "Courier New", monospace;
+      font-size: 15px;
+      border: 2px solid #444444;
+      background: white;
+    }
+
+    .colour-row {
+      display: flex;
+      gap: 18px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    label select,
+    label input {
+      display: block;
+      min-width: 120px;
+      margin-top: 5px;
+    }
+
+    .screen-wrap {
+      overflow: auto;
+      max-width: 100%;
+      padding: 4px 0 10px;
+    }
+
+    #screen {
+      display: grid;
+      grid-template-columns: repeat(32, var(--screen-cell-size));
+      grid-template-rows: repeat(24, var(--screen-cell-size));
+      width: max-content;
+      padding: 2px;
+      gap: var(--screen-grid);
+      background: #777777;
+      border: 3px solid #222222;
+      user-select: none;
+      touch-action: none;
+    }
+
+    #screen.grid-off {
+      gap: 0;
+      background: #000000;
+    }
+
+    .screen-cell {
+      width: var(--screen-cell-size);
+      height: var(--screen-cell-size);
+      cursor: crosshair;
+      image-rendering: pixelated;
+    }
+
+    .screen-cell.selection {
+      outline: 2px solid #ffcc00;
+      outline-offset: -2px;
+    }
+
+    .help {
+      margin: 8px 0 0;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .selected-label {
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .status {
+      min-height: 20px;
+      margin: 8px 0;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .mode-indicator {
+      margin: 8px 0;
+      padding: 8px;
+      border: 1px solid #777777;
+      background: #f7f7f7;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 10px;
+      }
+
+      .udg-list {
+        grid-template-columns: repeat(6, 38px);
+      }
+
+      #editor {
+        grid-template-columns: repeat(8, 31px);
+        grid-template-rows: repeat(8, 31px);
+      }
+
+      .editor-pixel {
+        width: 31px;
+        height: 31px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="title-row">
+    <h1>ZX Spectrum UDG Graphics Editor</h1>
+
+    <div class="project-bar">
+      <label class="project-name-field">
+        Project name
+        <input id="projectName" type="text" value="My Spectrum Graphics" maxlength="80">
+      </label>
+
+      <button id="saveProject" type="button">Save Project</button>
+      <button id="loadProject" type="button">Load Project</button>
+      <input id="projectFile" class="hidden-file-input" type="file" accept=".json,application/json">
+    </div>
+  </div>
+
+  <section class="panel collapsible-panel" data-panel-name="UDG Palette">
+    <div class="panel-header">
+      <h2>21 UDGs</h2>
+      <button class="panel-toggle" type="button" aria-expanded="true" title="Collapse panel">−</button>
+    </div>
+    <div class="panel-content">
+      <div id="udgList" class="udg-list"></div>
+    </div>
+  </section>
+
+  <section class="panel collapsible-panel" data-panel-name="UDG Editor">
+    <div class="panel-header">
+      <h2>UDG Editor and DATA</h2>
+      <button class="panel-toggle" type="button" aria-expanded="true" title="Collapse panel">−</button>
+    </div>
+    <div class="panel-content">
+    <div class="workspace">
+      <div>
+        <h2>Edit selected UDG</h2>
+        <div id="selectedLabel" class="selected-label">UDG 1</div>
+        <div id="editor"></div>
+        <p class="help">Left-drag paints. Right-drag erases.</p>
+      </div>
+
+      <div class="controls">
+        <h2>UDG Tools</h2>
+
+        <div class="tool-groups">
+          <div class="tool-group">
+            <strong>Basic</strong>
+            <div class="button-row">
+              <button id="clearUdg" type="button">Clear</button>
+              <button id="invertUdg" type="button">Invert</button>
+              <button id="duplicateUdg" type="button">Duplicate to Next Empty</button>
+            </div>
+          </div>
+
+          <div class="tool-group">
+            <strong>Mirror and Rotate</strong>
+            <div class="button-row">
+              <button id="mirrorHorizontal" type="button">Mirror Left ↔ Right</button>
+              <button id="mirrorVertical" type="button">Mirror Up ↕ Down</button>
+              <button id="rotateLeft" type="button">Rotate Left</button>
+              <button id="rotateRight" type="button">Rotate Right</button>
+            </div>
+          </div>
+
+          <div class="tool-group">
+            <strong>Shift One Pixel</strong>
+            <div class="button-row">
+              <button id="shiftUp" type="button">↑ Up</button>
+              <button id="shiftDown" type="button">↓ Down</button>
+              <button id="shiftLeft" type="button">← Left</button>
+              <button id="shiftRight" type="button">→ Right</button>
+            </div>
+          </div>
+        </div>
+
+        <h2>BASIC Export</h2>
+
+        <label class="check-row">
+          <input id="includePoke" type="checkbox" checked>
+          Include POKE loader in BASIC listing
+        </label>
+
+        <div class="button-row">
+          <button id="copyData" type="button">Copy Selected DATA</button>
+          <button id="copyAllData" type="button">Copy BASIC Listing</button>
+        </div>
+
+        <div id="status" class="status" aria-live="polite"></div>
+
+        <h2>Selected UDG</h2>
+        <textarea id="dataOutput" readonly></textarea>
+
+        <h2>All 21 UDGs / Listing</h2>
+        <textarea id="allDataOutput" readonly></textarea>
+
+        <p class="help">
+          UDGs are mapped to GRAPHICS-mode keys A–U. On 128K BASIC, T and U
+          are normally occupied by SPECTRUM and PLAY.
+        </p>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <section class="panel collapsible-panel" data-panel-name="Screen Editor">
+    <div class="panel-header">
+      <h2>Spectrum Screen Preview / Painter</h2>
+      <button class="panel-toggle" type="button" aria-expanded="true" title="Collapse panel">−</button>
+    </div>
+    <div class="panel-content">
+
+    <div class="screen-nav">
+      <button id="previousScreen" type="button">◀ Previous</button>
+      <span id="screenNumber" class="screen-number">Screen 1 of 1</span>
+      <button id="nextScreen" type="button">Next ▶</button>
+      <button id="newScreen" type="button">New Screen</button>
+      <button id="duplicateScreen" type="button">Duplicate Screen</button>
+      <button id="deleteScreen" type="button">Delete Screen</button>
+    </div>
+
+    <div class="colour-row">
+      <label>
+        Screen default INK
+        <select id="defaultInk"></select>
+      </label>
+
+      <label>
+        Screen default PAPER
+        <select id="defaultPaper"></select>
+      </label>
+
+      <label>
+        Foreground
+        <select id="foreground"></select>
+      </label>
+
+      <label>
+        Background
+        <select id="background"></select>
+      </label>
+
+      <label>
+        Zoom
+        <select id="zoom">
+          <option value="8">1×</option>
+          <option value="12">1.5×</option>
+          <option value="16" selected>2×</option>
+          <option value="24">3×</option>
+          <option value="32">4×</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="tool-groups">
+      <div class="tool-group">
+        <strong>Screen Tools</strong>
+        <div class="button-row">
+          <button id="paintMode" type="button" class="active">Paint</button>
+          <button id="rectangleMode" type="button">Rectangle Fill</button>
+          <button id="copyMode" type="button">Copy Region</button>
+          <button id="pasteMode" type="button">Paste Region</button>
+          <button id="stampMode" type="button">Stamp</button>
+          <button id="toggleGrid" type="button">Grid Off</button>
+          <button id="clearScreen" type="button">Clear Screen</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modeIndicator" class="mode-indicator">Mode: Paint — left-drag paints, right-drag erases.</div>
+
+    <div class="screen-wrap">
+      <div id="screen"></div>
+    </div>
+
+    <p class="help">
+      Rectangle and Copy Region: drag from one corner to the other. Paste Region:
+      click where its top-left corner should go. Stamp repeatedly places the selected
+      UDG without removing existing tiles.
+    </p>
+    </div>
+  </section>
+
+
+  <section class="panel collapsible-panel" data-panel-name="TAP Export">
+    <div class="panel-header">
+      <h2>Build Spectrum TAP</h2>
+      <button class="panel-toggle" type="button" aria-expanded="true" title="Collapse panel">−</button>
+    </div>
+    <div class="panel-content">
+      <div class="workspace">
+        <div>
+          <h2>Ready-to-load tape</h2>
+          <p class="help">
+            Builds a real Spectrum tape containing an auto-running BASIC loader
+            followed by the machine-code renderer, all 21 UDGs and every compressed screen.
+          </p>
+
+          <label>
+            Tape filename
+            <input id="tapName" type="text" value="GRAPHICS" maxlength="10">
+          </label>
+
+          <div class="button-row" style="margin-top: 12px;">
+            <button id="exportTap" type="button">Download TAP</button>
+          </div>
+
+          <p id="tapStatus" class="status" aria-live="polite"></p>
+        </div>
+
+        <div>
+          <h2>BASIC interface</h2>
+          <textarea id="tapInstructions" readonly></textarea>
+          <p class="help">
+            Screen numbers in BASIC begin at 1. The renderer stores them internally from 0.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    "use strict";
+
+    const UDG_COUNT = 21;
+    const GRID_SIZE = 8;
+    const SCREEN_COLS = 32;
+    const SCREEN_ROWS = 24;
+
+    const spectrumColours = {
+      Black: "#000000",
+      Blue: "#0000cd",
+      Red: "#cd0000",
+      Magenta: "#cd00cd",
+      Green: "#00cd00",
+      Cyan: "#00cdcd",
+      Yellow: "#cdcd00",
+      White: "#ffffff"
+    };
+
+    const udgs = Array.from(
+      { length: UDG_COUNT },
+      () => Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0))
+    );
+
+    function createBlankScreen(defaultInk = "White", defaultPaper = "Black") {
+      return {
+        defaultInk,
+        defaultPaper,
+        cells: Array.from(
+          { length: SCREEN_ROWS },
+          () => Array(SCREEN_COLS).fill(null)
+        )
+      };
+    }
+
+    const screens = [createBlankScreen()];
+    let selectedScreen = 0;
+
+    function currentScreenObject() {
+      return screens[selectedScreen];
+    }
+
+    function currentScreen() {
+      return currentScreenObject().cells;
+    }
+
+    let selectedUdg = 0;
+    let udgDrawing = false;
+    let udgDrawValue = 1;
+
+    let screenDrawing = false;
+    let screenDrawAction = "paint";
+    let screenMode = "paint";
+    let dragStart = null;
+    let dragCurrent = null;
+    let copiedRegion = null;
+
+    const udgList = document.getElementById("udgList");
+    const editor = document.getElementById("editor");
+    const screen = document.getElementById("screen");
+    const selectedLabel = document.getElementById("selectedLabel");
+    const dataOutput = document.getElementById("dataOutput");
+    const allDataOutput = document.getElementById("allDataOutput");
+    const foregroundSelect = document.getElementById("foreground");
+    const backgroundSelect = document.getElementById("background");
+    const status = document.getElementById("status");
+    const modeIndicator = document.getElementById("modeIndicator");
+    const projectNameInput = document.getElementById("projectName");
+    const projectFileInput = document.getElementById("projectFile");
+    const includePokeCheckbox = document.getElementById("includePoke");
+    const defaultInkSelect = document.getElementById("defaultInk");
+    const defaultPaperSelect = document.getElementById("defaultPaper");
+    const screenNumber = document.getElementById("screenNumber");
+    const tapNameInput = document.getElementById("tapName");
+    const tapStatus = document.getElementById("tapStatus");
+    const tapInstructions = document.getElementById("tapInstructions");
+
+    function blankGrid() {
+      return Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
+    }
+
+    function cloneGrid(grid) {
+      return grid.map((row) => row.slice());
+    }
+
+    function cloneCell(cell) {
+      return cell === null ? null : { ...cell };
+    }
+
+    function showStatus(message) {
+      status.textContent = message;
+      window.setTimeout(() => {
+        if (status.textContent === message) {
+          status.textContent = "";
+        }
+      }, 1700);
+    }
+
+    function buildColourSelectors() {
+      Object.keys(spectrumColours).forEach((name) => {
+        foregroundSelect.appendChild(new Option(name, name));
+        backgroundSelect.appendChild(new Option(name, name));
+        defaultInkSelect.appendChild(new Option(name, name));
+        defaultPaperSelect.appendChild(new Option(name, name));
+      });
+
+      foregroundSelect.value = "White";
+      backgroundSelect.value = "Black";
+      defaultInkSelect.value = "White";
+      defaultPaperSelect.value = "Black";
+    }
+
+    function buildUdgList() {
+      for (let i = 0; i < UDG_COUNT; i++) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "udg-choice";
+        button.dataset.index = String(i);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = 16;
+        canvas.height = 8;
+
+        const label = document.createElement("span");
+        label.textContent = String.fromCharCode(65 + i);
+
+        button.append(canvas, label);
+
+        button.addEventListener("click", () => {
+          selectedUdg = i;
+          refreshAll();
+        });
+
+        udgList.appendChild(button);
+      }
+    }
+
+    function buildEditor() {
+      editor.addEventListener("contextmenu", (event) => event.preventDefault());
+
+      for (let row = 0; row < GRID_SIZE; row++) {
+        for (let col = 0; col < GRID_SIZE; col++) {
+          const pixel = document.createElement("div");
+          pixel.className = "editor-pixel";
+          pixel.dataset.row = String(row);
+          pixel.dataset.col = String(col);
+
+          pixel.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+            udgDrawing = true;
+            udgDrawValue = event.button === 2 ? 0 : 1;
+            setEditorPixel(row, col, udgDrawValue);
+          });
+
+          pixel.addEventListener("pointerenter", (event) => {
+            if (udgDrawing && event.buttons !== 0) {
+              setEditorPixel(row, col, udgDrawValue);
+            }
+          });
+
+          editor.appendChild(pixel);
+        }
+      }
+
+      window.addEventListener("pointerup", () => {
+        udgDrawing = false;
+        finishScreenDrag();
+      });
+    }
+
+    function buildScreen() {
+      screen.addEventListener("contextmenu", (event) => event.preventDefault());
+
+      for (let row = 0; row < SCREEN_ROWS; row++) {
+        for (let col = 0; col < SCREEN_COLS; col++) {
+          const canvas = document.createElement("canvas");
+          canvas.width = 16;
+          canvas.height = 16;
+          canvas.className = "screen-cell";
+          canvas.dataset.row = String(row);
+          canvas.dataset.col = String(col);
+
+          canvas.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+            handleScreenPointerDown(row, col, event.button);
+          });
+
+          canvas.addEventListener("pointerenter", (event) => {
+            if (screenDrawing && event.buttons !== 0) {
+              handleScreenPointerMove(row, col);
+            }
+          });
+
+          screen.appendChild(canvas);
+          drawScreenCell(row, col);
+        }
+      }
+    }
+
+    function handleScreenPointerDown(row, col, button) {
+      const rightClick = button === 2;
+
+      if (screenMode === "paint") {
+        screenDrawing = true;
+        screenDrawAction = rightClick ? "erase" : "paint";
+        applyScreenAction(row, col, screenDrawAction);
+        return;
+      }
+
+      if (screenMode === "stamp") {
+        screenDrawing = true;
+        screenDrawAction = rightClick ? "erase" : "stamp";
+        applyScreenAction(row, col, screenDrawAction);
+        return;
+      }
+
+      if (screenMode === "paste") {
+        pasteRegion(row, col);
+        return;
+      }
+
+      dragStart = { row, col };
+      dragCurrent = { row, col };
+      screenDrawing = true;
+      updateSelectionHighlight();
+    }
+
+    function handleScreenPointerMove(row, col) {
+      if (screenMode === "paint" || screenMode === "stamp") {
+        applyScreenAction(row, col, screenDrawAction);
+        return;
+      }
+
+      dragCurrent = { row, col };
+      updateSelectionHighlight();
+    }
+
+    function finishScreenDrag() {
+      if (!screenDrawing) {
+        return;
+      }
+
+      screenDrawing = false;
+
+      if (!dragStart || !dragCurrent) {
+        return;
+      }
+
+      const bounds = getSelectionBounds();
+
+      if (screenMode === "rectangle") {
+        for (let row = bounds.top; row <= bounds.bottom; row++) {
+          for (let col = bounds.left; col <= bounds.right; col++) {
+            paintCell(row, col);
+          }
+        }
+      }
+
+      if (screenMode === "copy") {
+        copiedRegion = [];
+
+        for (let row = bounds.top; row <= bounds.bottom; row++) {
+          const copiedRow = [];
+
+          for (let col = bounds.left; col <= bounds.right; col++) {
+            copiedRow.push(cloneCell(currentScreen()[row][col]));
+          }
+
+          copiedRegion.push(copiedRow);
+        }
+
+        showStatus(
+          "Copied " +
+          (bounds.right - bounds.left + 1) +
+          " × " +
+          (bounds.bottom - bounds.top + 1) +
+          " region"
+        );
+      }
+
+      clearSelectionHighlight();
+      dragStart = null;
+      dragCurrent = null;
+    }
+
+    function applyScreenAction(row, col, action) {
+      if (action === "erase") {
+        currentScreen()[row][col] = null;
+        drawScreenCell(row, col);
+        return;
+      }
+
+      paintCell(row, col);
+    }
+
+    function paintCell(row, col) {
+      currentScreen()[row][col] = {
+        udg: selectedUdg,
+        foreground: foregroundSelect.value,
+        background: backgroundSelect.value
+      };
+
+      drawScreenCell(row, col);
+    }
+
+    function pasteRegion(startRow, startCol) {
+      if (!copiedRegion) {
+        showStatus("Copy a region first");
+        return;
+      }
+
+      for (let row = 0; row < copiedRegion.length; row++) {
+        for (let col = 0; col < copiedRegion[row].length; col++) {
+          const targetRow = startRow + row;
+          const targetCol = startCol + col;
+
+          if (targetRow < SCREEN_ROWS && targetCol < SCREEN_COLS) {
+            currentScreen()[targetRow][targetCol] = cloneCell(copiedRegion[row][col]);
+            drawScreenCell(targetRow, targetCol);
+          }
+        }
+      }
+    }
+
+    function getSelectionBounds() {
+      return {
+        top: Math.min(dragStart.row, dragCurrent.row),
+        bottom: Math.max(dragStart.row, dragCurrent.row),
+        left: Math.min(dragStart.col, dragCurrent.col),
+        right: Math.max(dragStart.col, dragCurrent.col)
+      };
+    }
+
+    function clearSelectionHighlight() {
+      screen.querySelectorAll(".selection").forEach((cell) => {
+        cell.classList.remove("selection");
+      });
+    }
+
+    function updateSelectionHighlight() {
+      clearSelectionHighlight();
+
+      if (!dragStart || !dragCurrent) {
+        return;
+      }
+
+      const bounds = getSelectionBounds();
+
+      for (let row = bounds.top; row <= bounds.bottom; row++) {
+        for (let col = bounds.left; col <= bounds.right; col++) {
+          screen.children[(row * SCREEN_COLS) + col].classList.add("selection");
+        }
+      }
+    }
+
+    function refreshWholeScreen() {
+      for (let row = 0; row < SCREEN_ROWS; row++) {
+        for (let col = 0; col < SCREEN_COLS; col++) {
+          drawScreenCell(row, col);
+        }
+      }
+    }
+
+    function refreshScreenControls() {
+      screenNumber.textContent =
+        "Screen " + (selectedScreen + 1) + " of " + screens.length;
+
+      defaultInkSelect.value = currentScreenObject().defaultInk;
+      defaultPaperSelect.value = currentScreenObject().defaultPaper;
+      refreshWholeScreen();
+    }
+
+    function cloneScreen(screenObject) {
+      return {
+        defaultInk: screenObject.defaultInk,
+        defaultPaper: screenObject.defaultPaper,
+        cells: screenObject.cells.map((row) =>
+          row.map((cell) => cloneCell(cell))
+        )
+      };
+    }
+
+    function setScreenMode(mode) {
+      screenMode = mode;
+      clearSelectionHighlight();
+      dragStart = null;
+      dragCurrent = null;
+
+      const buttons = {
+        paint: "paintMode",
+        rectangle: "rectangleMode",
+        copy: "copyMode",
+        paste: "pasteMode",
+        stamp: "stampMode"
+      };
+
+      Object.entries(buttons).forEach(([name, id]) => {
+        document.getElementById(id).classList.toggle("active", name === mode);
+      });
+
+      const messages = {
+        paint: "Mode: Paint — left-drag paints, right-drag erases.",
+        rectangle: "Mode: Rectangle Fill — drag a rectangle to fill it.",
+        copy: "Mode: Copy Region — drag around the region to copy.",
+        paste: "Mode: Paste Region — click the top-left destination.",
+        stamp: "Mode: Stamp — drag to place the selected UDG; right-drag erases."
+      };
+
+      modeIndicator.textContent = messages[mode];
+    }
+
+    function replaceSelectedGrid(newGrid) {
+      udgs[selectedUdg] = newGrid;
+      refreshAll();
+      refreshPaintedCopies(selectedUdg);
+    }
+
+    function setEditorPixel(row, col, value) {
+      udgs[selectedUdg][row][col] = value;
+      refreshEditor();
+      refreshUdgPreview(selectedUdg);
+      refreshDataOutput();
+      refreshPaintedCopies(selectedUdg);
+    }
+
+    function refreshEditor() {
+      editor.querySelectorAll(".editor-pixel").forEach((pixel) => {
+        const row = Number(pixel.dataset.row);
+        const col = Number(pixel.dataset.col);
+        pixel.classList.toggle("on", udgs[selectedUdg][row][col] === 1);
+      });
+    }
+
+    function refreshUdgPreview(index) {
+      const button = udgList.querySelector(`[data-index="${index}"]`);
+      const canvas = button.querySelector("canvas");
+      const context = canvas.getContext("2d");
+
+      context.imageSmoothingEnabled = false;
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = "#000000";
+
+      for (let row = 0; row < GRID_SIZE; row++) {
+        for (let col = 0; col < GRID_SIZE; col++) {
+          if (udgs[index][row][col]) {
+            context.fillRect(col * 2, row, 2, 1);
+          }
+        }
+      }
+    }
+
+    function getUdgBytes(index) {
+      return udgs[index].map((row) => {
+        let value = 0;
+
+        for (let col = 0; col < GRID_SIZE; col++) {
+          if (row[col]) {
+            value |= 1 << (7 - col);
+          }
+        }
+
+        return value;
+      });
+    }
+
+    function refreshDataOutput() {
+      const key = String.fromCharCode(65 + selectedUdg);
+      dataOutput.value =
+        "REM UDG " + key + "\n" +
+        "DATA " + getUdgBytes(selectedUdg).join(",");
+
+      const dataLines = udgs.map((_, index) =>
+        (1000 + index * 10) +
+        " REM UDG " + String.fromCharCode(65 + index) + "\n" +
+        (1005 + index * 10) +
+        " DATA " + getUdgBytes(index).join(",")
+      );
+
+      if (includePokeCheckbox.checked) {
+        allDataOutput.value =
+          "10 REM LOAD 21 UDGs A TO U\n" +
+          "20 FOR n=0 TO 167\n" +
+          "30 READ a: POKE USR \"A\"+n,a\n" +
+          "40 NEXT n\n" +
+          "50 REM UDGs READY\n" +
+          dataLines.join("\n");
+      } else {
+        allDataOutput.value = dataLines.join("\n");
+      }
+    }
+
+    function drawScreenCell(row, col) {
+      const canvas = screen.children[(row * SCREEN_COLS) + col];
+      const context = canvas.getContext("2d");
+      const cell = currentScreen()[row][col];
+
+      context.imageSmoothingEnabled = false;
+
+      if (cell === null) {
+        context.fillStyle = spectrumColours[currentScreenObject().defaultPaper];
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        return;
+      }
+
+      const graphic = udgs[cell.udg];
+
+      context.fillStyle = spectrumColours[cell.background];
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = spectrumColours[cell.foreground];
+
+      for (let pixelRow = 0; pixelRow < GRID_SIZE; pixelRow++) {
+        for (let pixelCol = 0; pixelCol < GRID_SIZE; pixelCol++) {
+          if (graphic[pixelRow][pixelCol]) {
+            context.fillRect(pixelCol * 2, pixelRow * 2, 2, 2);
+          }
+        }
+      }
+    }
+
+    function refreshPaintedCopies(udgIndex) {
+      for (let row = 0; row < SCREEN_ROWS; row++) {
+        for (let col = 0; col < SCREEN_COLS; col++) {
+          const cell = currentScreen()[row][col];
+
+          if (cell !== null && cell.udg === udgIndex) {
+            drawScreenCell(row, col);
+          }
+        }
+      }
+    }
+
+    function refreshAll() {
+      selectedLabel.textContent =
+        "UDG " + String.fromCharCode(65 + selectedUdg) +
+        " (" + (selectedUdg + 1) + " of " + UDG_COUNT + ")";
+
+      udgList.querySelectorAll(".udg-choice").forEach((button, index) => {
+        button.classList.toggle("selected", index === selectedUdg);
+        refreshUdgPreview(index);
+      });
+
+      refreshEditor();
+      refreshDataOutput();
+    }
+
+    async function copyText(text, message) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (error) {
+        const temporary = document.createElement("textarea");
+        temporary.value = text;
+        document.body.appendChild(temporary);
+        temporary.select();
+        document.execCommand("copy");
+        temporary.remove();
+      }
+
+      showStatus(message);
+    }
+
+    document.getElementById("exportTap").addEventListener("click", exportTapFile);
+    tapNameInput.addEventListener("input", refreshTapInstructions);
+
+    document.getElementById("saveProject").addEventListener("click", saveProjectFile);
+
+    document.getElementById("loadProject").addEventListener("click", () => {
+      projectFileInput.click();
+    });
+
+    projectFileInput.addEventListener("change", () => {
+      openProjectFile(projectFileInput.files[0]);
+    });
+
+    document.getElementById("clearUdg").addEventListener("click", () => {
+      replaceSelectedGrid(blankGrid());
+    });
+
+    document.getElementById("invertUdg").addEventListener("click", () => {
+      replaceSelectedGrid(
+        udgs[selectedUdg].map((row) => row.map((pixel) => pixel ? 0 : 1))
+      );
+    });
+
+    document.getElementById("duplicateUdg").addEventListener("click", () => {
+      let target = -1;
+
+      for (let offset = 1; offset < UDG_COUNT; offset++) {
+        const candidate = (selectedUdg + offset) % UDG_COUNT;
+        const isEmpty = udgs[candidate].every((row) =>
+          row.every((pixel) => pixel === 0)
+        );
+
+        if (isEmpty) {
+          target = candidate;
+          break;
+        }
+      }
+
+      if (target === -1) {
+        showStatus("No empty UDG slots available");
+        return;
+      }
+
+      udgs[target] = cloneGrid(udgs[selectedUdg]);
+      selectedUdg = target;
+      refreshAll();
+      refreshPaintedCopies(target);
+      showStatus(
+        "Duplicated into UDG " + String.fromCharCode(65 + target)
+      );
+    });
+
+    document.getElementById("mirrorHorizontal").addEventListener("click", () => {
+      replaceSelectedGrid(udgs[selectedUdg].map((row) => row.slice().reverse()));
+    });
+
+    document.getElementById("mirrorVertical").addEventListener("click", () => {
+      replaceSelectedGrid(cloneGrid(udgs[selectedUdg]).reverse());
+    });
+
+    document.getElementById("rotateRight").addEventListener("click", () => {
+      const source = udgs[selectedUdg];
+      const rotated = blankGrid();
+
+      for (let row = 0; row < GRID_SIZE; row++) {
+        for (let col = 0; col < GRID_SIZE; col++) {
+          rotated[col][GRID_SIZE - 1 - row] = source[row][col];
+        }
+      }
+
+      replaceSelectedGrid(rotated);
+    });
+
+    document.getElementById("rotateLeft").addEventListener("click", () => {
+      const source = udgs[selectedUdg];
+      const rotated = blankGrid();
+
+      for (let row = 0; row < GRID_SIZE; row++) {
+        for (let col = 0; col < GRID_SIZE; col++) {
+          rotated[GRID_SIZE - 1 - col][row] = source[row][col];
+        }
+      }
+
+      replaceSelectedGrid(rotated);
+    });
+
+    document.getElementById("shiftUp").addEventListener("click", () => {
+      const shifted = blankGrid();
+      for (let row = 1; row < GRID_SIZE; row++) shifted[row - 1] = udgs[selectedUdg][row].slice();
+      replaceSelectedGrid(shifted);
+    });
+
+    document.getElementById("shiftDown").addEventListener("click", () => {
+      const shifted = blankGrid();
+      for (let row = 0; row < GRID_SIZE - 1; row++) shifted[row + 1] = udgs[selectedUdg][row].slice();
+      replaceSelectedGrid(shifted);
+    });
+
+    document.getElementById("shiftLeft").addEventListener("click", () => {
+      const shifted = blankGrid();
+      for (let row = 0; row < GRID_SIZE; row++) {
+        for (let col = 1; col < GRID_SIZE; col++) shifted[row][col - 1] = udgs[selectedUdg][row][col];
+      }
+      replaceSelectedGrid(shifted);
+    });
+
+    document.getElementById("shiftRight").addEventListener("click", () => {
+      const shifted = blankGrid();
+      for (let row = 0; row < GRID_SIZE; row++) {
+        for (let col = 0; col < GRID_SIZE - 1; col++) shifted[row][col + 1] = udgs[selectedUdg][row][col];
+      }
+      replaceSelectedGrid(shifted);
+    });
+
+    document.getElementById("copyData").addEventListener("click", () => {
+      copyText(dataOutput.value, "Selected DATA copied");
+    });
+
+    document.getElementById("copyAllData").addEventListener("click", () => {
+      copyText(allDataOutput.value, "All DATA copied");
+    });
+
+    document.getElementById("paintMode").addEventListener("click", () => setScreenMode("paint"));
+    document.getElementById("rectangleMode").addEventListener("click", () => setScreenMode("rectangle"));
+    document.getElementById("copyMode").addEventListener("click", () => setScreenMode("copy"));
+    document.getElementById("pasteMode").addEventListener("click", () => setScreenMode("paste"));
+    document.getElementById("stampMode").addEventListener("click", () => setScreenMode("stamp"));
+
+    document.getElementById("toggleGrid").addEventListener("click", (event) => {
+      const off = screen.classList.toggle("grid-off");
+      event.currentTarget.textContent = off ? "Grid On" : "Grid Off";
+    });
+
+    document.getElementById("zoom").addEventListener("change", (event) => {
+      document.documentElement.style.setProperty("--screen-cell-size", event.target.value + "px");
+    });
+
+    includePokeCheckbox.addEventListener("change", refreshDataOutput);
+
+    defaultInkSelect.addEventListener("change", () => {
+      currentScreenObject().defaultInk = defaultInkSelect.value;
+      refreshWholeScreen();
+    });
+
+    defaultPaperSelect.addEventListener("change", () => {
+      currentScreenObject().defaultPaper = defaultPaperSelect.value;
+      refreshWholeScreen();
+    });
+
+    document.getElementById("previousScreen").addEventListener("click", () => {
+      selectedScreen =
+        (selectedScreen - 1 + screens.length) % screens.length;
+      refreshScreenControls();
+    });
+
+    document.getElementById("nextScreen").addEventListener("click", () => {
+      selectedScreen = (selectedScreen + 1) % screens.length;
+      refreshScreenControls();
+    });
+
+    document.getElementById("newScreen").addEventListener("click", () => {
+      screens.push(createBlankScreen(
+        currentScreenObject().defaultInk,
+        currentScreenObject().defaultPaper
+      ));
+      selectedScreen = screens.length - 1;
+      refreshScreenControls();
+      showStatus("New screen created");
+    });
+
+    document.getElementById("duplicateScreen").addEventListener("click", () => {
+      screens.splice(selectedScreen + 1, 0, cloneScreen(currentScreenObject()));
+      selectedScreen++;
+      refreshScreenControls();
+      showStatus("Screen duplicated");
+    });
+
+    document.getElementById("deleteScreen").addEventListener("click", () => {
+      if (screens.length === 1) {
+        screens[0] = createBlankScreen(
+          currentScreenObject().defaultInk,
+          currentScreenObject().defaultPaper
+        );
+        refreshScreenControls();
+        showStatus("Only screen cleared");
+        return;
+      }
+
+      screens.splice(selectedScreen, 1);
+      selectedScreen = Math.min(selectedScreen, screens.length - 1);
+      refreshScreenControls();
+      showStatus("Screen deleted");
+    });
+
+    document.getElementById("clearScreen").addEventListener("click", () => {
+      for (let row = 0; row < SCREEN_ROWS; row++) {
+        for (let col = 0; col < SCREEN_COLS; col++) {
+          currentScreen()[row][col] = null;
+          drawScreenCell(row, col);
+        }
+      }
+    });
+
+
+
+    function safeProjectFilename(name) {
+      const cleaned = name
+        .trim()
+        .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-")
+        .replace(/\s+/g, " ")
+        .replace(/[. ]+$/g, "");
+
+      return (cleaned || "spectrum-graphics-project") + ".json";
+    }
+
+    function getProjectData() {
+      return {
+        format: "zx-spectrum-udg-editor-project",
+        version: 2,
+        projectName: projectNameInput.value.trim() || "My Spectrum Graphics",
+        savedAt: new Date().toISOString(),
+        selectedUdg,
+        udgs: udgs.map((grid) => cloneGrid(grid)),
+        selectedScreen,
+        screens: screens.map((screenObject) => cloneScreen(screenObject)),
+        settings: {
+          foreground: foregroundSelect.value,
+          background: backgroundSelect.value,
+          zoom: document.getElementById("zoom").value,
+          gridOff: screen.classList.contains("grid-off"),
+          screenMode,
+          includePoke: includePokeCheckbox.checked
+        },
+        copiedRegion: copiedRegion
+          ? copiedRegion.map((row) => row.map((cell) => cloneCell(cell)))
+          : null
+      };
+    }
+
+    function saveProjectFile() {
+      const project = getProjectData();
+      const json = JSON.stringify(project, null, 2);
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = safeProjectFilename(project.projectName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showStatus("Project saved");
+    }
+
+    function validateProjectData(project) {
+      if (
+        !project ||
+        project.format !== "zx-spectrum-udg-editor-project" ||
+        !Array.isArray(project.udgs) ||
+        project.udgs.length !== UDG_COUNT ||
+        (
+          !Array.isArray(project.screens) &&
+          (!Array.isArray(project.screen) || project.screen.length !== SCREEN_ROWS)
+        )
+      ) {
+        throw new Error("This is not a valid ZX Spectrum UDG Editor project.");
+      }
+
+      project.udgs.forEach((grid) => {
+        if (!Array.isArray(grid) || grid.length !== GRID_SIZE) {
+          throw new Error("The project contains an invalid UDG.");
+        }
+
+        grid.forEach((row) => {
+          if (!Array.isArray(row) || row.length !== GRID_SIZE) {
+            throw new Error("The project contains an invalid UDG row.");
+          }
+        });
+      });
+
+      const savedScreens = Array.isArray(project.screens)
+        ? project.screens
+        : [{ defaultInk: "White", defaultPaper: "Black", cells: project.screen }];
+
+      if (savedScreens.length < 1) {
+        throw new Error("The project does not contain any screens.");
+      }
+
+      savedScreens.forEach((screenObject) => {
+        if (
+          !screenObject ||
+          !Array.isArray(screenObject.cells) ||
+          screenObject.cells.length !== SCREEN_ROWS
+        ) {
+          throw new Error("The project contains an invalid screen.");
+        }
+
+        screenObject.cells.forEach((row) => {
+          if (!Array.isArray(row) || row.length !== SCREEN_COLS) {
+            throw new Error("The project contains an invalid screen row.");
+          }
+        });
+      });
+    }
+
+    function loadProjectData(project) {
+      validateProjectData(project);
+
+      projectNameInput.value =
+        typeof project.projectName === "string" && project.projectName.trim()
+          ? project.projectName
+          : "My Spectrum Graphics";
+
+      for (let index = 0; index < UDG_COUNT; index++) {
+        udgs[index] = project.udgs[index].map((row) =>
+          row.map((pixel) => pixel ? 1 : 0)
+        );
+      }
+
+      const savedScreens = Array.isArray(project.screens)
+        ? project.screens
+        : [{ defaultInk: "White", defaultPaper: "Black", cells: project.screen }];
+
+      screens.length = 0;
+
+      savedScreens.forEach((savedScreen) => {
+        const loadedScreen = createBlankScreen(
+          spectrumColours[savedScreen.defaultInk] ? savedScreen.defaultInk : "White",
+          spectrumColours[savedScreen.defaultPaper] ? savedScreen.defaultPaper : "Black"
+        );
+
+        for (let row = 0; row < SCREEN_ROWS; row++) {
+          for (let col = 0; col < SCREEN_COLS; col++) {
+            const cell = savedScreen.cells[row][col];
+
+            if (
+              cell === null ||
+              typeof cell !== "object" ||
+              !Number.isInteger(cell.udg) ||
+              cell.udg < 0 ||
+              cell.udg >= UDG_COUNT
+            ) {
+              loadedScreen.cells[row][col] = null;
+            } else {
+              loadedScreen.cells[row][col] = {
+                udg: cell.udg,
+                foreground: spectrumColours[cell.foreground]
+                  ? cell.foreground
+                  : "White",
+                background: spectrumColours[cell.background]
+                  ? cell.background
+                  : "Black"
+              };
+            }
+          }
+        }
+
+        screens.push(loadedScreen);
+      });
+
+      selectedScreen = Number.isInteger(project.selectedScreen)
+        ? Math.max(0, Math.min(screens.length - 1, project.selectedScreen))
+        : 0;
+
+      selectedUdg = Number.isInteger(project.selectedUdg)
+        ? Math.max(0, Math.min(UDG_COUNT - 1, project.selectedUdg))
+        : 0;
+
+      const settings = project.settings || {};
+
+      foregroundSelect.value = spectrumColours[settings.foreground]
+        ? settings.foreground
+        : "White";
+
+      backgroundSelect.value = spectrumColours[settings.background]
+        ? settings.background
+        : "Black";
+
+      const zoomValue = ["8", "12", "16", "24", "32"].includes(String(settings.zoom))
+        ? String(settings.zoom)
+        : "16";
+
+      document.getElementById("zoom").value = zoomValue;
+      document.documentElement.style.setProperty(
+        "--screen-cell-size",
+        zoomValue + "px"
+      );
+
+      screen.classList.toggle("grid-off", Boolean(settings.gridOff));
+      document.getElementById("toggleGrid").textContent =
+        settings.gridOff ? "Grid On" : "Grid Off";
+
+      includePokeCheckbox.checked = settings.includePoke !== false;
+
+      const validModes = ["paint", "rectangle", "copy", "paste", "stamp"];
+      setScreenMode(validModes.includes(settings.screenMode) ? settings.screenMode : "paint");
+
+      copiedRegion = Array.isArray(project.copiedRegion)
+        ? project.copiedRegion.map((row) =>
+            Array.isArray(row) ? row.map((cell) => cloneCell(cell)) : []
+          )
+        : null;
+
+      refreshAll();
+      refreshScreenControls();
+      showStatus("Project loaded");
+    }
+
+    function openProjectFile(file) {
+      if (!file) {
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.addEventListener("load", () => {
+        try {
+          const project = JSON.parse(String(reader.result));
+          loadProjectData(project);
+        } catch (error) {
+          window.alert(error.message || "The project file could not be loaded.");
+        } finally {
+          projectFileInput.value = "";
+        }
+      });
+
+      reader.addEventListener("error", () => {
+        window.alert("The project file could not be read.");
+        projectFileInput.value = "";
+      });
+
+      reader.readAsText(file);
+    }
+
+
+    const TAP_LOAD_ADDRESS = 50000;
+    const TAP_CONTROL_ADDRESS = TAP_LOAD_ADDRESS;
+    const TAP_RENDERER_OFFSET = 16;
+    const TAP_RENDERER_ADDRESS = TAP_LOAD_ADDRESS + TAP_RENDERER_OFFSET;
+
+    const spectrumColourNumbers = {
+      Black: 0,
+      Blue: 1,
+      Red: 2,
+      Magenta: 3,
+      Green: 4,
+      Cyan: 5,
+      Yellow: 6,
+      White: 7
+    };
+
+    function littleEndianWord(value) {
+      return [value & 255, (value >> 8) & 255];
+    }
+
+    function xorChecksum(bytes) {
+      return bytes.reduce((value, byte) => value ^ byte, 0);
+    }
+
+    function tapeBlock(payload) {
+      const length = payload.length;
+      return [...littleEndianWord(length), ...payload];
+    }
+
+    function spectrumTapeName(name) {
+      const cleaned = (name || "GRAPHICS")
+        .toUpperCase()
+        .replace(/[^A-Z0-9 _-]/g, "")
+        .slice(0, 10)
+        .padEnd(10, " ");
+
+      return Array.from(cleaned, (character) => character.charCodeAt(0));
+    }
+
+    function makeTapeHeader(type, name, length, parameter1, parameter2) {
+      const body = [
+        0,
+        type,
+        ...spectrumTapeName(name),
+        ...littleEndianWord(length),
+        ...littleEndianWord(parameter1),
+        ...littleEndianWord(parameter2)
+      ];
+
+      return tapeBlock([...body, xorChecksum(body)]);
+    }
+
+    function makeTapeData(data) {
+      const body = [255, ...data];
+      return tapeBlock([...body, xorChecksum(body)]);
+    }
+
+    function spectrumInteger(value) {
+      return [
+        ...Array.from(String(value), (character) => character.charCodeAt(0)),
+        14, 0, 0, value & 255, (value >> 8) & 255, 0
+      ];
+    }
+
+    function basicLine(number, bytes) {
+      const content = [...bytes, 13];
+      return [
+        (number >> 8) & 255,
+        number & 255,
+        ...littleEndianWord(content.length),
+        ...content
+      ];
+    }
+
+    function buildBasicLoader(codeLength, screenCount) {
+      const SPACE = 32;
+      const QUOTE = 34;
+
+      const lines = [
+        basicLine(10, [253, SPACE, ...spectrumInteger(TAP_LOAD_ADDRESS - 1)]),
+        basicLine(20, [
+          239, SPACE, QUOTE, QUOTE, SPACE, 175, SPACE,
+          ...spectrumInteger(TAP_LOAD_ADDRESS)
+        ]),
+        basicLine(30, [
+          235, SPACE, 97, 61, ...spectrumInteger(0),
+          32, 204, 32, ...spectrumInteger(screenCount - 1)
+        ]),
+        basicLine(40, [
+          244, SPACE,
+          ...spectrumInteger(TAP_CONTROL_ADDRESS),
+          44,
+          97
+        ]),
+        basicLine(50, [
+          249, SPACE, 192, SPACE,
+          ...spectrumInteger(TAP_RENDERER_ADDRESS)
+        ]),
+        basicLine(60,[242,32,...spectrumInteger(0)]),
+        basicLine(70,[243,32,97])
+      ];
+
+      return lines.flat();
+    }
+
+    function createAssembler() {
+      const bytes = [];
+      const labels = new Map();
+      const absoluteFixups = [];
+      const relativeFixups = [];
+
+      return {
+        emit(...values) {
+          values.forEach((value) => bytes.push(value & 255));
+        },
+
+        word(value) {
+          bytes.push(value & 255, (value >> 8) & 255);
+        },
+
+        label(name) {
+          labels.set(name, bytes.length);
+        },
+
+        absolute(opcode, label) {
+          bytes.push(opcode, 0, 0);
+          absoluteFixups.push({ offset: bytes.length - 2, label });
+        },
+
+        relative(opcode, label) {
+          bytes.push(opcode, 0);
+          relativeFixups.push({ offset: bytes.length - 1, label });
+        },
+
+        finish(origin) {
+          absoluteFixups.forEach((fixup) => {
+            if (!labels.has(fixup.label)) {
+              throw new Error("Missing assembler label: " + fixup.label);
+            }
+
+            const address = origin + labels.get(fixup.label);
+            bytes[fixup.offset] = address & 255;
+            bytes[fixup.offset + 1] = (address >> 8) & 255;
+          });
+
+          relativeFixups.forEach((fixup) => {
+            if (!labels.has(fixup.label)) {
+              throw new Error("Missing assembler label: " + fixup.label);
+            }
+
+            const displacement = labels.get(fixup.label) - (fixup.offset + 1);
+
+            if (displacement < -128 || displacement > 127) {
+              throw new Error("Relative jump is out of range.");
+            }
+
+            bytes[fixup.offset] = displacement & 255;
+          });
+
+          return bytes;
+        },
+
+        get length() {
+          return bytes.length;
+        }
+      };
+    }
+
+    function buildRenderer(
+      udgAddress,
+      directoryAddress,
+      screenDataAddress,
+      screenCount,
+      exportedUdgCount
+    ) {
+      const asm = createAssembler();
+
+      // Install all UDG definitions at USR "A" (65368).
+      asm.emit(0x21); asm.word(udgAddress);       // LD HL,udgAddress
+      asm.emit(0x11); asm.word(65368);            // LD DE,65368
+      asm.emit(0x01); asm.word(exportedUdgCount * 8); // LD BC,packed UDG bytes
+      asm.emit(0x78);                                 // LD A,B
+      asm.emit(0xB1);                                 // OR C
+      asm.relative(0x28, "skipUdgInstall");            // JR Z,skipUdgInstall
+      asm.emit(0xED, 0xB0);                           // LDIR
+      asm.label("skipUdgInstall");
+
+      // Find selected screen through its two-byte directory offset.
+      asm.emit(0x3A); asm.word(TAP_CONTROL_ADDRESS); // LD A,(control)
+      asm.emit(0xFE, screenCount);                    // CP screenCount
+      asm.emit(0xD0);                                 // RET NC
+      asm.emit(0x6F);                                 // LD L,A
+      asm.emit(0x26, 0);                              // LD H,0
+      asm.emit(0x29);                                 // ADD HL,HL
+      asm.emit(0x11); asm.word(directoryAddress);     // LD DE,directory
+      asm.emit(0x19);                                 // ADD HL,DE
+      asm.emit(0x5E);                                 // LD E,(HL)
+      asm.emit(0x23);                                 // INC HL
+      asm.emit(0x56);                                 // LD D,(HL)
+      asm.emit(0x21); asm.word(screenDataAddress);    // LD HL,data
+      asm.emit(0x19);                                 // ADD HL,DE
+
+      // Read screen default attribute, then clear bitmap and attributes.
+      asm.emit(0x7E);                                 // LD A,(HL)
+      asm.emit(0x23);                                 // INC HL
+      asm.emit(0xE5);                                 // PUSH HL
+      asm.emit(0xF5);                                 // PUSH AF
+
+      asm.emit(0xAF);                                 // XOR A
+      asm.emit(0x21); asm.word(16384);                // LD HL,16384
+      asm.emit(0x11); asm.word(16385);                // LD DE,16385
+      asm.emit(0x01); asm.word(6143);                 // LD BC,6143
+      asm.emit(0x77);                                 // LD (HL),A
+      asm.emit(0xED, 0xB0);                           // LDIR
+
+      asm.emit(0xF1);                                 // POP AF
+      asm.emit(0x21); asm.word(22528);                // LD HL,22528
+      asm.emit(0x11); asm.word(22529);                // LD DE,22529
+      asm.emit(0x01); asm.word(767);                  // LD BC,767
+      asm.emit(0x77);                                 // LD (HL),A
+      asm.emit(0xED, 0xB0);                           // LDIR
+
+      asm.emit(0xE1);                                 // POP HL (stream)
+      asm.emit(0x11, 0, 0);                           // LD DE,0 (cell position)
+
+      asm.label("record");
+      asm.emit(0x4E);                                 // LD C,(HL)
+      asm.emit(0x23);                                 // INC HL
+      asm.emit(0x46);                                 // LD B,(HL)
+      asm.emit(0x23);                                 // INC HL
+      asm.emit(0x78);                                 // LD A,B
+      asm.emit(0xA1);                                 // AND C
+      asm.emit(0xFE, 255);                            // CP 255
+      asm.emit(0xC8);                                 // RET Z
+
+      asm.emit(0xE5);                                 // PUSH HL
+      asm.emit(0xEB);                                 // EX DE,HL
+      asm.emit(0x09);                                 // ADD HL,BC
+      asm.emit(0xEB);                                 // EX DE,HL
+      asm.emit(0xE1);                                 // POP HL
+      asm.emit(0x7E);                                 // LD A,(HL)
+      asm.emit(0x23);                                 // INC HL
+      asm.emit(0x47);                                 // LD B,A
+
+      asm.label("tileLoop");
+      asm.emit(0x4E);                                 // LD C,(HL) tile
+      asm.emit(0x23);                                 // INC HL
+      asm.emit(0x7E);                                 // LD A,(HL) attr
+      asm.emit(0x23);                                 // INC HL
+      asm.emit(0xE5, 0xC5, 0xD5);                     // PUSH HL,BC,DE
+      asm.absolute(0xCD, "drawCell");                  // CALL drawCell
+      asm.emit(0xD1, 0xC1, 0xE1);                     // POP DE,BC,HL
+      asm.emit(0x13);                                 // INC DE
+      asm.relative(0x10, "tileLoop");                  // DJNZ tileLoop
+      asm.absolute(0xC3, "record");                    // JP record
+
+      asm.label("drawCell");
+      // Attribute address = 22528 + cell position.
+      asm.emit(0x21); asm.word(22528);                // LD HL,22528
+      asm.emit(0x19);                                 // ADD HL,DE
+      asm.emit(0x77);                                 // LD (HL),A
+
+      // Tile 255 is a deliberately blank tile: keep its attribute,
+      // but leave the bitmap cleared.
+      asm.emit(0x79);                                 // LD A,C
+      asm.emit(0xFE, 255);                            // CP 255
+      asm.emit(0xC8);                                 // RET Z
+
+      // x = position & 31.
+      asm.emit(0x7B);                                 // LD A,E
+      asm.emit(0xE6, 31);                             // AND 31
+      asm.emit(0x47);                                 // LD B,A
+
+      // y = position >> 5.
+      asm.emit(0x62, 0x6B);                           // LD H,D / LD L,E
+      for (let i = 0; i < 5; i++) {
+        asm.emit(0xCB, 0x3C, 0xCB, 0x1D);             // SRL H / RR L
+      }
+
+      // Spectrum bitmap address for character cell x,y:
+      // 16384 + ((y AND 24) * 256) + ((y AND 7) * 32) + x.
+      // The bitmap is split into three interleaved 8-row sections.
+      asm.emit(0x7D);                                 // LD A,L
+      asm.emit(0xE6, 24);                             // AND 24
+      asm.emit(0xC6, 64);                             // ADD A,64
+      asm.emit(0x57);                                 // LD D,A
+
+      asm.emit(0x7D);                                 // LD A,L
+      asm.emit(0xE6, 7);                              // AND 7
+      asm.emit(0x07, 0x07, 0x07, 0x07, 0x07);        // RLCA x5 (*32)
+      asm.emit(0x80);                                 // ADD A,B (x)
+      asm.emit(0x5F);                                 // LD E,A
+
+      // Source UDG = udgAddress + tile*8.
+      asm.emit(0x79);                                 // LD A,C
+      asm.emit(0x07, 0x07, 0x07);                     // RLCA x3
+      asm.emit(0x6F);                                 // LD L,A
+      asm.emit(0x26, 0);                              // LD H,0
+      asm.emit(0x01); asm.word(udgAddress);           // LD BC,udgAddress
+      asm.emit(0x09);                                 // ADD HL,BC
+      asm.emit(0x06, 8);                              // LD B,8
+
+      asm.label("copyRows");
+      asm.emit(0x7E);                                 // LD A,(HL)
+      asm.emit(0x12);                                 // LD (DE),A
+      asm.emit(0x23);                                 // INC HL
+      asm.emit(0x14);                                 // INC D
+      asm.relative(0x10, "copyRows");                  // DJNZ copyRows
+      asm.emit(0xC9);                                 // RET
+
+      return asm.finish(TAP_RENDERER_ADDRESS);
+    }
+
+    function colourAttribute(ink, paper) {
+      return (
+        spectrumColourNumbers[ink] +
+        spectrumColourNumbers[paper] * 8
+      );
+    }
+
+    function compressScreenForTap(screenObject, packedTileMap) {
+      const output = [
+        colourAttribute(screenObject.defaultInk, screenObject.defaultPaper)
+      ];
+
+      let position = 0;
+      let index = 0;
+
+      while (index < SCREEN_ROWS * SCREEN_COLS) {
+        while (
+          index < SCREEN_ROWS * SCREEN_COLS &&
+          screenObject.cells[Math.floor(index / SCREEN_COLS)][index % SCREEN_COLS] === null
+        ) {
+          index++;
+        }
+
+        if (index >= SCREEN_ROWS * SCREEN_COLS) {
+          break;
+        }
+
+        const start = index;
+        const run = [];
+
+        while (
+          index < SCREEN_ROWS * SCREEN_COLS &&
+          run.length < 255
+        ) {
+          const cell =
+            screenObject.cells[Math.floor(index / SCREEN_COLS)][index % SCREEN_COLS];
+
+          if (cell === null) {
+            break;
+          }
+
+          run.push(cell);
+          index++;
+        }
+
+        const skip = start - position;
+        output.push(...littleEndianWord(skip), run.length);
+
+        run.forEach((cell) => {
+          const packedTile = packedTileMap[cell.udg];
+
+          output.push(
+            packedTile === undefined ? 255 : packedTile,
+            colourAttribute(cell.foreground, cell.background)
+          );
+        });
+
+        position = start + run.length;
+      }
+
+      output.push(255, 255);
+      return output;
+    }
+
+
+    function isBlankUdg(index) {
+      return getUdgBytes(index).every((byte) => byte === 0);
+    }
+
+    function buildPackedUdgSet() {
+      const packedTileMap = {};
+      const packedUdgBytes = [];
+      const exportedIndexes = [];
+
+      for (let index = 0; index < UDG_COUNT; index++) {
+        if (isBlankUdg(index)) {
+          continue;
+        }
+
+        packedTileMap[index] = exportedIndexes.length;
+        exportedIndexes.push(index);
+        packedUdgBytes.push(...getUdgBytes(index));
+      }
+
+      return {
+        packedTileMap,
+        packedUdgBytes,
+        exportedIndexes
+      };
+    }
+
+    function buildGraphicsPackage() {
+      const packedUdgs = buildPackedUdgSet();
+      const compressedScreens = screens.map((screenObject) =>
+        compressScreenForTap(screenObject, packedUdgs.packedTileMap)
+      );
+      const directoryLength = screens.length * 2;
+
+      // First build gets the renderer's fixed size.
+      const placeholderRenderer = buildRenderer(
+        0,
+        0,
+        0,
+        screens.length,
+        packedUdgs.exportedIndexes.length
+      );
+      const udgOffset = TAP_RENDERER_OFFSET + placeholderRenderer.length;
+      const directoryOffset = udgOffset + packedUdgs.packedUdgBytes.length;
+      const dataOffset = directoryOffset + directoryLength;
+
+      const udgAddress = TAP_LOAD_ADDRESS + udgOffset;
+      const directoryAddress = TAP_LOAD_ADDRESS + directoryOffset;
+      const screenDataAddress = TAP_LOAD_ADDRESS + dataOffset;
+
+      const renderer = buildRenderer(
+        udgAddress,
+        directoryAddress,
+        screenDataAddress,
+        screens.length,
+        packedUdgs.exportedIndexes.length
+      );
+
+      const directory = [];
+      let runningOffset = 0;
+
+      compressedScreens.forEach((screenBytes) => {
+        directory.push(...littleEndianWord(runningOffset));
+        runningOffset += screenBytes.length;
+      });
+
+      const header = Array(TAP_RENDERER_OFFSET).fill(0);
+      header[0] = 0; // Requested screen, zero based.
+      header[1] = 90; // Z
+      header[2] = 88; // X
+      header[3] = 71; // G
+      header[4] = 1;  // Package version.
+      header[5] = screens.length;
+
+      const packageBytes = [
+        ...header,
+        ...renderer,
+        ...packedUdgs.packedUdgBytes,
+        ...directory,
+        ...compressedScreens.flat()
+      ];
+
+      if (TAP_LOAD_ADDRESS + packageBytes.length > 65535) {
+        throw new Error(
+          "The graphics package is too large for address " +
+          TAP_LOAD_ADDRESS +
+          ". Remove screens or simplify them."
+        );
+      }
+
+      return {
+        packageBytes,
+        exportedUdgCount: packedUdgs.exportedIndexes.length,
+        removedBlankUdgCount: UDG_COUNT - packedUdgs.exportedIndexes.length
+      };
+    }
+
+    function buildTapFile() {
+      const graphicsPackage = buildGraphicsPackage();
+      const packageBytes = graphicsPackage.packageBytes;
+      const basicBytes = buildBasicLoader(packageBytes.length, screens.length);
+      const name = tapNameInput.value.trim() || "GRAPHICS";
+
+      return {
+        bytes: [
+          ...makeTapeHeader(0, name, basicBytes.length, 10, basicBytes.length),
+          ...makeTapeData(basicBytes),
+          ...makeTapeHeader(
+            3,
+            name,
+            packageBytes.length,
+            TAP_LOAD_ADDRESS,
+            32768
+          ),
+          ...makeTapeData(packageBytes)
+        ],
+        packageLength: packageBytes.length,
+        basicLength: basicBytes.length,
+        exportedUdgCount: graphicsPackage.exportedUdgCount,
+        removedBlankUdgCount: graphicsPackage.removedBlankUdgCount,
+        name
+      };
+    }
+
+    function refreshTapInstructions() {
+      tapInstructions.value =
+        "The exported TAP auto-loads and draws screen 1.\\n\\n" +
+        "To draw another screen from your own BASIC:\\n\\n" +
+        "LET s=2\\n" +
+        "POKE " + TAP_CONTROL_ADDRESS + ",s-1\\n" +
+        "RANDOMIZE USR " + TAP_RENDERER_ADDRESS + "\\n\\n" +
+        "Package load address: " + TAP_LOAD_ADDRESS + "\\n" +
+        "Required CLEAR: " + (TAP_LOAD_ADDRESS - 1) + "\\n" +
+        "Renderer entry: " + TAP_RENDERER_ADDRESS;
+    }
+
+    function exportTapFile() {
+      try {
+        const tap = buildTapFile();
+        const blob = new Blob(
+          [new Uint8Array(tap.bytes)],
+          { type: "application/octet-stream" }
+        );
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = url;
+        const tapFilename = (tap.name || "GRAPHICS")
+          .trim()
+          .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-")
+          .replace(/\s+/g, " ")
+          .replace(/[. ]+$/g, "") || "GRAPHICS";
+
+        link.download = tapFilename.replace(/\.tap$/i, "") + ".tap";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+        tapStatus.textContent =
+          tapFilename + ".tap built: " +
+          tap.packageLength +
+          " byte graphics package, " +
+          screens.length +
+          " screen" +
+          (screens.length === 1 ? "" : "s") +
+          ", " +
+          tap.exportedUdgCount +
+          " UDG" +
+          (tap.exportedUdgCount === 1 ? "" : "s") +
+          " exported; " +
+          tap.removedBlankUdgCount +
+          " blank slot" +
+          (tap.removedBlankUdgCount === 1 ? "" : "s") +
+          " omitted.";
+      } catch (error) {
+        tapStatus.textContent = error.message || "The TAP could not be built.";
+      }
+    }
+
+    function buildCollapsiblePanels() {
+      document.querySelectorAll(".collapsible-panel").forEach((panel) => {
+        const button = panel.querySelector(".panel-toggle");
+        const content = panel.querySelector(".panel-content");
+        const panelName = panel.dataset.panelName || "Panel";
+
+        button.addEventListener("click", () => {
+          const isCollapsed = panel.classList.toggle("collapsed");
+
+          content.hidden = isCollapsed;
+          button.textContent = isCollapsed ? "+" : "−";
+          button.setAttribute("aria-expanded", String(!isCollapsed));
+          button.title = isCollapsed
+            ? "Expand " + panelName
+            : "Collapse " + panelName;
+        });
+      });
+    }
+
+    buildCollapsiblePanels();
+    buildColourSelectors();
+    buildUdgList();
+    buildEditor();
+    buildScreen();
+    refreshAll();
+    refreshScreenControls();
+    refreshTapInstructions();
+  </script>
+</body>
+</html>

@@ -584,8 +584,8 @@ function refreshScreenUdgPreview(index) {
   }
 }
 
-function getUdgBytes(index) {
-  return udgs[index].map((row) => {
+function getGridBytes(grid) {
+  return grid.map((row) => {
     let value = 0;
 
     for (let col = 0; col < GRID_SIZE; col++) {
@@ -596,6 +596,10 @@ function getUdgBytes(index) {
 
     return value;
   });
+}
+
+function getUdgBytes(index) {
+  return getGridBytes(udgs[index]);
 }
 
 function refreshDataOutput() {
@@ -1425,7 +1429,8 @@ function createAssembler() {
 }
 
 function buildRenderer(
-  bankDataAddress,
+  tileDataAddress,
+  bankMapAddress,
   directoryAddress,
   screenDataAddress,
   screenCount
@@ -1455,20 +1460,60 @@ function buildRenderer(
   asm.emit(0x23);                                 // INC HL
   asm.emit(0xE5);                                 // PUSH HL (stream)
 
-  // Source = bankDataAddress + bank*168.
-  asm.emit(0x21); asm.word(bankDataAddress);       // LD HL,bank data
+  // Find this bank's 21-byte packed-tile lookup table.
+  asm.emit(0x21); asm.word(bankMapAddress);        // LD HL,bank map
   asm.emit(0xB7);                                 // OR A
   asm.relative(0x28, "installBank");               // JR Z,installBank
-  asm.emit(0x11); asm.word(UDG_COUNT * 8);         // LD DE,168
+  asm.emit(0x11); asm.word(UDG_COUNT);             // LD DE,21
   asm.label("findBank");
   asm.emit(0x19);                                 // ADD HL,DE
   asm.emit(0x3D);                                 // DEC A
   asm.relative(0x20, "findBank");                  // JR NZ,findBank
 
   asm.label("installBank");
-  asm.emit(0x11); asm.word(65368);                 // LD DE,USR "A"
-  asm.emit(0x01); asm.word(UDG_COUNT * 8);         // LD BC,168
+  asm.emit(0xE5);                                 // PUSH HL (bank map)
+
+  // Clear all 21 BASIC UDG slots before installing non-blank definitions.
+  asm.emit(0xAF);                                 // XOR A
+  asm.emit(0x21); asm.word(65368);                 // LD HL,USR "A"
+  asm.emit(0x11); asm.word(65369);                 // LD DE,USR "A"+1
+  asm.emit(0x01); asm.word(UDG_COUNT * 8 - 1);     // LD BC,167
+  asm.emit(0x77);                                 // LD (HL),A
   asm.emit(0xED, 0xB0);                           // LDIR
+  asm.emit(0xE1);                                 // POP HL (bank map)
+
+  asm.emit(0x11); asm.word(65368);                 // LD DE,UDG destination
+  asm.emit(0x06, UDG_COUNT);                       // LD B,21 slots
+  asm.label("installSlot");
+  asm.emit(0x7E);                                 // LD A,(HL) packed tile
+  asm.emit(0x23);                                 // INC HL
+  asm.emit(0xFE, 255);                            // CP 255
+  asm.relative(0x28, "skipInstallSlot");           // JR Z,skip slot
+
+  asm.emit(0xE5, 0xC5);                           // PUSH HL,BC
+  asm.emit(0x6F);                                 // LD L,A
+  asm.emit(0x26, 0);                              // LD H,0
+  asm.emit(0x29, 0x29, 0x29);                     // ADD HL,HL x3
+  asm.emit(0x01); asm.word(tileDataAddress);       // LD BC,tile data
+  asm.emit(0x09);                                 // ADD HL,BC
+  asm.emit(0x06, 8);                              // LD B,8
+  asm.label("copyInstallRows");
+  asm.emit(0x7E);                                 // LD A,(HL)
+  asm.emit(0x12);                                 // LD (DE),A
+  asm.emit(0x23, 0x13);                           // INC HL / INC DE
+  asm.relative(0x10, "copyInstallRows");           // DJNZ copy rows
+  asm.emit(0xC1, 0xE1);                           // POP BC,HL
+  asm.relative(0x18, "nextInstallSlot");           // JR next slot
+
+  asm.label("skipInstallSlot");
+  asm.emit(0xE5);                                 // PUSH HL
+  asm.emit(0x21); asm.word(8);                    // LD HL,8
+  asm.emit(0x19);                                 // ADD HL,DE
+  asm.emit(0xEB);                                 // EX DE,HL
+  asm.emit(0xE1);                                 // POP HL
+
+  asm.label("nextInstallSlot");
+  asm.relative(0x10, "installSlot");               // DJNZ installSlot
   asm.emit(0xE1);                                 // POP HL (stream)
   asm.emit(0xF1);                                 // POP AF (attribute)
 
@@ -1561,11 +1606,11 @@ function buildRenderer(
   asm.emit(0x80);                                 // ADD A,B (x)
   asm.emit(0x5F);                                 // LD E,A
 
-  // Source UDG = bankDataAddress + tile*8.
+  // Source UDG = tileDataAddress + packed tile*8.
   asm.emit(0x69);                                 // LD L,C
   asm.emit(0x26, 0);                              // LD H,0
   asm.emit(0x29, 0x29, 0x29);                     // ADD HL,HL x3
-  asm.emit(0x01); asm.word(bankDataAddress);      // LD BC,bank data
+  asm.emit(0x01); asm.word(tileDataAddress);      // LD BC,tile data
   asm.emit(0x09);                                 // ADD HL,BC
   asm.emit(0x06, 8);                              // LD B,8
 
@@ -1587,7 +1632,7 @@ function colourAttribute(ink, paper) {
   );
 }
 
-function compressScreenForTap(screenObject) {
+function compressScreenForTap(screenObject, packedTileMap) {
   const output = [
     colourAttribute(screenObject.defaultInk, screenObject.defaultPaper),
     screenObject.activeBank
@@ -1631,10 +1676,10 @@ function compressScreenForTap(screenObject) {
 
     run.forEach((cell) => {
       const bank = Number.isInteger(cell.bank) ? cell.bank : 0;
-      const tile = bank * UDG_COUNT + cell.udg;
+      const tile = packedTileMap[bank + ":" + cell.udg];
 
       output.push(
-        tile,
+        tile === undefined ? 255 : tile,
         colourAttribute(cell.foreground, cell.background)
       );
     });
@@ -1646,19 +1691,43 @@ function compressScreenForTap(screenObject) {
   return output;
 }
 
-function buildGraphicsPackage() {
-  const bankBytes = udgBanks.flatMap((bank) =>
-    bank.flatMap((grid) => grid.map((row) => {
-      let value = 0;
+function buildPackedUdgSet() {
+  const packedTileMap = {};
+  const packedUdgBytes = [];
+  const bankMaps = Array.from(
+    { length: UDG_BANK_COUNT },
+    () => Array(UDG_COUNT).fill(255)
+  );
+  let exportedUdgCount = 0;
 
-      for (let col = 0; col < GRID_SIZE; col++) {
-        if (row[col]) value |= 1 << (7 - col);
+  udgBanks.forEach((bank, bankIndex) => {
+    bank.forEach((grid, udgIndex) => {
+      const bytes = getGridBytes(grid);
+
+      if (bytes.every((byte) => byte === 0)) {
+        return;
       }
 
-      return value;
-    }))
+      const packedIndex = exportedUdgCount++;
+      packedTileMap[bankIndex + ":" + udgIndex] = packedIndex;
+      bankMaps[bankIndex][udgIndex] = packedIndex;
+      packedUdgBytes.push(...bytes);
+    });
+  });
+
+  return {
+    packedTileMap,
+    packedUdgBytes,
+    bankMapBytes: bankMaps.flat(),
+    exportedUdgCount
+  };
+}
+
+function buildGraphicsPackage() {
+  const packedUdgs = buildPackedUdgSet();
+  const compressedScreens = screens.map((screenObject) =>
+    compressScreenForTap(screenObject, packedUdgs.packedTileMap)
   );
-  const compressedScreens = screens.map(compressScreenForTap);
   const directoryLength = screens.length * 2;
 
   // First build gets the renderer's fixed size.
@@ -1666,18 +1735,22 @@ function buildGraphicsPackage() {
     0,
     0,
     0,
+    0,
     screens.length
   );
-  const bankDataOffset = TAP_RENDERER_OFFSET + placeholderRenderer.length;
-  const directoryOffset = bankDataOffset + bankBytes.length;
+  const tileDataOffset = TAP_RENDERER_OFFSET + placeholderRenderer.length;
+  const bankMapOffset = tileDataOffset + packedUdgs.packedUdgBytes.length;
+  const directoryOffset = bankMapOffset + packedUdgs.bankMapBytes.length;
   const dataOffset = directoryOffset + directoryLength;
 
-  const bankDataAddress = TAP_LOAD_ADDRESS + bankDataOffset;
+  const tileDataAddress = TAP_LOAD_ADDRESS + tileDataOffset;
+  const bankMapAddress = TAP_LOAD_ADDRESS + bankMapOffset;
   const directoryAddress = TAP_LOAD_ADDRESS + directoryOffset;
   const screenDataAddress = TAP_LOAD_ADDRESS + dataOffset;
 
   const renderer = buildRenderer(
-    bankDataAddress,
+    tileDataAddress,
+    bankMapAddress,
     directoryAddress,
     screenDataAddress,
     screens.length
@@ -1703,7 +1776,8 @@ function buildGraphicsPackage() {
   const packageBytes = [
     ...header,
     ...renderer,
-    ...bankBytes,
+    ...packedUdgs.packedUdgBytes,
+    ...packedUdgs.bankMapBytes,
     ...directory,
     ...compressedScreens.flat()
   ];
@@ -1718,7 +1792,9 @@ function buildGraphicsPackage() {
 
   return {
     packageBytes,
-    exportedUdgCount: UDG_BANK_COUNT * UDG_COUNT,
+    exportedUdgCount: packedUdgs.exportedUdgCount,
+    removedBlankUdgCount:
+      UDG_BANK_COUNT * UDG_COUNT - packedUdgs.exportedUdgCount,
     bankCount: UDG_BANK_COUNT
   };
 }
@@ -1745,6 +1821,7 @@ function buildTapFile() {
     packageLength: packageBytes.length,
     basicLength: basicBytes.length,
     exportedUdgCount: graphicsPackage.exportedUdgCount,
+    removedBlankUdgCount: graphicsPackage.removedBlankUdgCount,
     bankCount: graphicsPackage.bankCount,
     name
   };
@@ -1798,7 +1875,9 @@ function exportTapFile() {
       (tap.exportedUdgCount === 1 ? "" : "s") +
       " across " +
       tap.bankCount +
-      " banks exported.";
+      " banks; " +
+      tap.removedBlankUdgCount +
+      " blank slots omitted.";
   } catch (error) {
     tapStatus.textContent = error.message || "The TAP could not be built.";
   }

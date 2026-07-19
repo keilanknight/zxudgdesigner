@@ -33,14 +33,17 @@ find dist -maxdepth 1 -type f \( \
   -name 'app.js' -o \
   -name 'styles.css' -o \
   -name 'app-*.js' -o \
-  -name 'styles-*.css' \
+  -name 'styles-*.css' -o \
+  -name 'spectrum-charset-*.png' \
 \) -delete
 
 BUILD_VERSION="$build_version" perl -0pi -e '
   s/styles\.css\?v=dev/styles-$ENV{BUILD_VERSION}.css/g;
   s/app\.js\?v=dev/app-$ENV{BUILD_VERSION}.js/g;
+  s/spectrum-charset\.png\?v=dev/spectrum-charset-$ENV{BUILD_VERSION}.png/g;
 ' dist/index.html
 
+cp spectrum-charset.png "dist/spectrum-charset-$build_version.png"
 npx --yes clean-css-cli -o "dist/styles-$build_version.css" styles.css
 npx --yes terser app.js \
   --compress passes=3,unsafe_arrows=true \

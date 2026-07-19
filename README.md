@@ -27,8 +27,9 @@ For a website, upload the contents of `dist/` together:
 ```text
 dist/
 ├── index.html
-├── styles.css
-└── app.js
+├── styles-VERSION.css
+├── app-VERSION.js
+└── spectrum-charset-VERSION.png
 ```
 
 The files use relative paths, so the editor can be hosted in a subdirectory as well as at the root of a site.
@@ -113,6 +114,9 @@ The designer includes five placement modes:
 - **Copy Region:** drag around a rectangular part of the screen.
 - **Paste Region:** click the destination for the copied region's top-left corner.
 - **Stamp:** repeatedly place the selected UDG without removing surrounding cells; right-drag still erases.
+- **Text:** enter one or more lines of text, then click the destination for their top-left character cell.
+
+Text uses the current screen INK, PAPER, and BRIGHT settings. Each character occupies one authentic 8×8 Spectrum cell. New lines move down the screen, and text that reaches the right or bottom edge is clipped. The `£` and `©` characters map to their Spectrum character positions; unsupported characters become `?`.
 
 The copied region is also included in saved project data, so it is available again after reloading a project.
 
@@ -149,7 +153,7 @@ The copied region is also included in saved project data, so it is available aga
 - Each screen's preferred UDG bank and default colours.
 - The selected bank, UDG, screen, tools, zoom, grid state, and clipboard region.
 
-**Load Project** restores that file. The current project format is version 5. Older single-bank project files remain supported and are loaded into Bank 1; the other banks begin empty. Projects saved before BRIGHT support load with BRIGHT on.
+**Load Project** restores that file. The current project format is version 6. Older single-bank project files remain supported and are loaded into Bank 1; the other banks begin empty. Projects saved before BRIGHT support load with BRIGHT on.
 
 Project JSON files are editable, but keeping their array dimensions intact is important. Invalid files are rejected rather than partially loaded.
 
@@ -161,8 +165,9 @@ Project JSON files are editable, but keeping their array dimensions intact is im
 2. A compact Z80 machine-code renderer.
 3. Only the nonblank UDG definitions created across the four banks.
 4. A small lookup table preserving bank and letter relationships.
-5. A directory of compressed screens.
-6. The compressed screen data and colour attributes.
+5. Spectrum character codes for text, which use the original ROM font and need no exported bitmap data.
+6. A directory of compressed screens.
+7. The compressed screen data and colour attributes.
 
 The package loads at address `50000`. Its renderer entry point is `50016`.
 
@@ -204,6 +209,7 @@ The exported loader reserves memory with `CLEAR 49999`, loads the package at `50
 ├── index.html       HTML structure
 ├── styles.css       Development stylesheet
 ├── app.js           Editor, persistence, export, assembler, and renderer logic
+├── spectrum-charset.png  CC0 browser-preview bitmap sheet
 ├── dist/            Minified website build
 └── README.md
 ```
@@ -242,3 +248,5 @@ The ready-to-deploy version is in `dist/`. The unminified source files remain th
 This is an open-source project created and maintained by Keilan Knight. Bug reports, compatibility findings, workflow ideas, and improvements are welcome.
 
 Before redistributing modified versions, add an explicit licence file appropriate to the way you want the project to be reused; the repository currently identifies the project as open source but does not yet include a formal software licence.
+
+The browser character preview uses the CC0 `ZX Spectrum character set.png` created by WinTakeAll and published through Wikimedia Commons. Spectrum TAP output reads character shapes from the machine's own ROM rather than redistributing a ROM image.

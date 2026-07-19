@@ -217,9 +217,15 @@
           <button id="copyMode" type="button">Copy Region</button>
           <button id="pasteMode" type="button">Paste Region</button>
           <button id="stampMode" type="button">Stamp</button>
+          <button id="textMode" type="button">Text</button>
           <button id="toggleGrid" type="button">Grid Off</button>
           <button id="clearScreen" type="button">Clear Screen</button>
         </div>
+
+        <label class="screen-text-entry">
+          Text to place
+          <textarea id="screenText" rows="3" maxlength="768" placeholder="Type Spectrum text here"></textarea>
+        </label>
       </div>
     </div>
 
@@ -241,7 +247,8 @@
     <p class="help">
       Rectangle and Copy Region: drag from one corner to the other. Paste Region:
       click where its top-left corner should go. Stamp repeatedly places the selected
-      UDG without removing existing tiles.
+      UDG without removing existing tiles. Text: enter one or more lines, then click
+      the top-left character cell.
     </p>
     </div>
   </section>
@@ -288,6 +295,13 @@
     &copy; 2026 Keilan Knight &middot; Open-source project
   </footer>
 
+  <img
+    id="spectrumCharset"
+    class="charset-source"
+    src="spectrum-charset.png?v=dev"
+    alt=""
+    aria-hidden="true"
+  >
   <script src="app.js?v=dev"></script>
 </body>
 </html>

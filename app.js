@@ -91,6 +91,7 @@ let screenMode = "paint";
 let dragStart = null;
 let dragCurrent = null;
 let copiedRegion = null;
+let spectrumCharacterBytes = null;
 
 const udgList = document.getElementById("udgList");
 const editorBankTabs = document.getElementById("editorBankTabs");
@@ -120,6 +121,8 @@ const screenNumber = document.getElementById("screenNumber");
 const tapNameInput = document.getElementById("tapName");
 const tapStatus = document.getElementById("tapStatus");
 const tapInstructions = document.getElementById("tapInstructions");
+const screenTextInput = document.getElementById("screenText");
+const spectrumCharsetImage = document.getElementById("spectrumCharset");
 
 function blankGrid() {
   return Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
@@ -140,6 +143,45 @@ function showStatus(message) {
       status.textContent = "";
     }
   }, 1700);
+}
+
+function buildSpectrumCharacterBytes() {
+  const sourceCanvas = document.createElement("canvas");
+  sourceCanvas.width = spectrumCharsetImage.naturalWidth;
+  sourceCanvas.height = spectrumCharsetImage.naturalHeight;
+  const context = sourceCanvas.getContext("2d", { willReadFrequently: true });
+
+  context.drawImage(spectrumCharsetImage, 0, 0);
+  const pixels = context.getImageData(
+    0,
+    0,
+    sourceCanvas.width,
+    sourceCanvas.height
+  ).data;
+
+  spectrumCharacterBytes = Array.from({ length: 112 }, (_, index) => {
+    const sourceX = (index % 16) * 16;
+    const sourceY = Math.floor(index / 16) * 16;
+
+    return Array.from({ length: 8 }, (_, row) => {
+      let value = 0;
+
+      for (let col = 0; col < 8; col++) {
+        const pixelOffset = (
+          (sourceY + row * 2) * sourceCanvas.width +
+          sourceX + col * 2
+        ) * 4;
+
+        if (pixels[pixelOffset] < 128) {
+          value |= 1 << (7 - col);
+        }
+      }
+
+      return value;
+    });
+  });
+
+  refreshWholeScreen();
 }
 
 function buildColourSelectors() {
@@ -329,6 +371,11 @@ function handleScreenPointerDown(row, col, button) {
     return;
   }
 
+  if (screenMode === "text") {
+    placeText(row, col);
+    return;
+  }
+
   dragStart = { row, col };
   dragCurrent = { row, col };
   screenDrawing = true;
@@ -413,6 +460,47 @@ function paintCell(row, col) {
   };
 
   drawScreenCell(row, col);
+}
+
+function spectrumCharacterCode(character) {
+  if (character === "£") return 96;
+  if (character === "©") return 127;
+  if (character === "`") return 63;
+
+  const code = character.charCodeAt(0);
+  return code >= 32 && code <= 126 ? code : 63;
+}
+
+function placeText(startRow, startCol) {
+  const lines = screenTextInput.value.replace(/\r\n?/g, "\n").split("\n");
+
+  if (!screenTextInput.value) {
+    showStatus("Enter some text first");
+    screenTextInput.focus();
+    return;
+  }
+
+  lines.forEach((line, lineIndex) => {
+    const targetRow = startRow + lineIndex;
+
+    if (targetRow >= SCREEN_ROWS) return;
+
+    Array.from(line).forEach((character, characterIndex) => {
+      const targetCol = startCol + characterIndex;
+
+      if (targetCol >= SCREEN_COLS) return;
+
+      currentScreen()[targetRow][targetCol] = {
+        character: spectrumCharacterCode(character),
+        foreground: foregroundSelect.value,
+        background: backgroundSelect.value,
+        bright: brightSelect.value === "on"
+      };
+      drawScreenCell(targetRow, targetCol);
+    });
+  });
+
+  showStatus("Text placed");
 }
 
 function pasteRegion(startRow, startCol) {
@@ -507,7 +595,8 @@ function setScreenMode(mode) {
     rectangle: "rectangleMode",
     copy: "copyMode",
     paste: "pasteMode",
-    stamp: "stampMode"
+    stamp: "stampMode",
+    text: "textMode"
   };
 
   Object.entries(buttons).forEach(([name, id]) => {
@@ -519,7 +608,8 @@ function setScreenMode(mode) {
     rectangle: "Mode: Rectangle Fill — drag a rectangle to fill it.",
     copy: "Mode: Copy Region — drag around the region to copy.",
     paste: "Mode: Paste Region — click the top-left destination.",
-    stamp: "Mode: Stamp — drag to place the selected UDG; right-drag erases."
+    stamp: "Mode: Stamp — drag to place the selected UDG; right-drag erases.",
+    text: "Mode: Text — enter text, then click its top-left destination."
   };
 
   modeIndicator.textContent = messages[mode];
@@ -676,8 +766,11 @@ function drawScreenCell(row, col) {
     return;
   }
 
+  const isText = Number.isInteger(cell.character);
   const cellBank = Number.isInteger(cell.bank) ? cell.bank : 0;
-  const graphic = udgBanks[cellBank][cell.udg];
+  const graphic = isText
+    ? spectrumCharacterBytes && spectrumCharacterBytes[cell.character - 32]
+    : udgBanks[cellBank][cell.udg];
 
   context.fillStyle = spectrumColour(cell.background, cell.bright !== false);
   context.fillRect(0, 0, canvas.width, canvas.height);
@@ -685,7 +778,11 @@ function drawScreenCell(row, col) {
 
   for (let pixelRow = 0; pixelRow < GRID_SIZE; pixelRow++) {
     for (let pixelCol = 0; pixelCol < GRID_SIZE; pixelCol++) {
-      if (graphic[pixelRow][pixelCol]) {
+      const pixelOn = isText
+        ? graphic && (graphic[pixelRow] & (1 << (7 - pixelCol))) !== 0
+        : graphic[pixelRow][pixelCol];
+
+      if (pixelOn) {
         context.fillRect(pixelCol * 2, pixelRow * 2, 2, 2);
       }
     }
@@ -879,6 +976,7 @@ document.getElementById("rectangleMode").addEventListener("click", () => setScre
 document.getElementById("copyMode").addEventListener("click", () => setScreenMode("copy"));
 document.getElementById("pasteMode").addEventListener("click", () => setScreenMode("paste"));
 document.getElementById("stampMode").addEventListener("click", () => setScreenMode("stamp"));
+document.getElementById("textMode").addEventListener("click", () => setScreenMode("text"));
 
 document.getElementById("toggleGrid").addEventListener("click", (event) => {
   const off = screen.classList.toggle("grid-off");
@@ -1042,7 +1140,7 @@ function safeProjectFilename(name) {
 function getProjectData() {
   return {
     format: "zx-spectrum-udg-editor-project",
-    version: 5,
+    version: 6,
     projectName: projectNameInput.value.trim() || "My Spectrum Graphics",
     savedAt: new Date().toISOString(),
     selectedBank,
@@ -1062,7 +1160,8 @@ function getProjectData() {
       zoom: document.getElementById("zoom").value,
       gridOff: screen.classList.contains("grid-off"),
       screenMode,
-      includePoke: includePokeCheckbox.checked
+      includePoke: includePokeCheckbox.checked,
+      screenText: screenTextInput.value
     },
     copiedRegion: copiedRegion
       ? copiedRegion.map((row) => row.map((cell) => cloneCell(cell)))
@@ -1206,15 +1305,28 @@ function loadProjectData(project) {
       for (let col = 0; col < SCREEN_COLS; col++) {
         const cell = savedScreen.cells[row][col];
 
-        if (
-          cell === null ||
-          typeof cell !== "object" ||
-          !Number.isInteger(cell.udg) ||
-          cell.udg < 0 ||
-          cell.udg >= UDG_COUNT
-        ) {
+        if (cell === null || typeof cell !== "object") {
           loadedScreen.cells[row][col] = null;
-        } else {
+        } else if (
+          Number.isInteger(cell.character) &&
+          cell.character >= 32 &&
+          cell.character <= 127
+        ) {
+          loadedScreen.cells[row][col] = {
+            character: cell.character,
+            foreground: spectrumColours[cell.foreground]
+              ? cell.foreground
+              : "White",
+            background: spectrumColours[cell.background]
+              ? cell.background
+              : "Black",
+            bright: cell.bright !== false
+          };
+        } else if (
+          Number.isInteger(cell.udg) &&
+          cell.udg >= 0 &&
+          cell.udg < UDG_COUNT
+        ) {
           loadedScreen.cells[row][col] = {
             bank: Number.isInteger(cell.bank)
               ? Math.max(0, Math.min(UDG_BANK_COUNT - 1, cell.bank))
@@ -1228,6 +1340,8 @@ function loadProjectData(project) {
               : "Black",
             bright: cell.bright !== false
           };
+        } else {
+          loadedScreen.cells[row][col] = null;
         }
       }
     }
@@ -1273,8 +1387,11 @@ function loadProjectData(project) {
     settings.gridOff ? "Grid On" : "Grid Off";
 
   includePokeCheckbox.checked = settings.includePoke !== false;
+  screenTextInput.value = typeof settings.screenText === "string"
+    ? settings.screenText
+    : "";
 
-  const validModes = ["paint", "rectangle", "copy", "paste", "stamp"];
+  const validModes = ["paint", "rectangle", "copy", "paste", "stamp", "text"];
   setScreenMode(validModes.includes(settings.screenMode) ? settings.screenMode : "paint");
 
   copiedRegion = Array.isArray(project.copiedRegion)
@@ -1661,12 +1778,28 @@ function buildRenderer(
   asm.emit(0x80);                                 // ADD A,B (x)
   asm.emit(0x5F);                                 // LD E,A
 
-  // Source UDG = tileDataAddress + packed tile*8.
-  asm.emit(0x69);                                 // LD L,C
+  // Text codes 32-127 use the Spectrum ROM font directly.
+  asm.emit(0x79);                                 // LD A,C
+  asm.emit(0xFE, 128);                            // CP 128
+  asm.relative(0x38, "romCharacter");              // JR C,romCharacter
+
+  // Packed UDG codes begin at 128.
+  asm.emit(0xD6, 128);                            // SUB 128
+  asm.emit(0x6F);                                 // LD L,A
   asm.emit(0x26, 0);                              // LD H,0
   asm.emit(0x29, 0x29, 0x29);                     // ADD HL,HL x3
   asm.emit(0x01); asm.word(tileDataAddress);      // LD BC,tile data
   asm.emit(0x09);                                 // ADD HL,BC
+  asm.relative(0x18, "copyCharacter");             // JR copyCharacter
+
+  asm.label("romCharacter");
+  asm.emit(0x69);                                 // LD L,C
+  asm.emit(0x26, 0);                              // LD H,0
+  asm.emit(0x29, 0x29, 0x29);                     // ADD HL,HL x3
+  asm.emit(0x01); asm.word(15360);                // ROM CHARS base-256
+  asm.emit(0x09);                                 // ADD HL,BC
+
+  asm.label("copyCharacter");
   asm.emit(0x06, 8);                              // LD B,8
 
   asm.label("copyRows");
@@ -1735,11 +1868,18 @@ function compressScreenForTap(screenObject, packedTileMap) {
     output.push(...littleEndianWord(skip), run.length);
 
     run.forEach((cell) => {
-      const bank = Number.isInteger(cell.bank) ? cell.bank : 0;
-      const tile = packedTileMap[bank + ":" + cell.udg];
+      let tile;
+
+      if (Number.isInteger(cell.character)) {
+        tile = cell.character;
+      } else {
+        const bank = Number.isInteger(cell.bank) ? cell.bank : 0;
+        const packedTile = packedTileMap[bank + ":" + cell.udg];
+        tile = packedTile === undefined ? 255 : 128 + packedTile;
+      }
 
       output.push(
-        tile === undefined ? 255 : tile,
+        tile,
         colourAttribute(cell.foreground, cell.background, cell.bright !== false)
       );
     });
@@ -1970,6 +2110,13 @@ buildUdgList();
 buildScreenUdgList();
 buildEditor();
 buildScreen();
+
+if (spectrumCharsetImage.complete && spectrumCharsetImage.naturalWidth) {
+  buildSpectrumCharacterBytes();
+} else {
+  spectrumCharsetImage.addEventListener("load", buildSpectrumCharacterBytes);
+}
+
 refreshAll();
 refreshScreenControls();
 refreshTapInstructions();

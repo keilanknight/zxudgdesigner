@@ -324,6 +324,19 @@ h2 {
   align-items: center;
 }
 
+.screen-text-entry {
+  margin-top: 10px;
+}
+
+.screen-text-entry textarea {
+  min-height: 68px;
+  margin-top: 5px;
+}
+
+.charset-source {
+  display: none;
+}
+
 button,
 select,
 input[type="number"] {

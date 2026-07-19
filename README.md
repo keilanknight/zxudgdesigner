@@ -212,17 +212,22 @@ The project intentionally has no runtime dependencies. The development version i
 
 ### Rebuilding `dist/`
 
-The current distribution uses Clean CSS for the stylesheet and Terser for JavaScript compression and identifier mangling:
+The build script uses Clean CSS for the stylesheet and Terser for JavaScript compression and identifier mangling. Pass a new version every time a deployable build is created:
 
 ```sh
-cp index.html dist/index.html
-npx --yes clean-css-cli -o dist/styles.css styles.css
-npx --yes terser app.js \
-  --compress passes=3,unsafe_arrows=true \
-  --mangle \
-  --ecma 2017 \
-  --output dist/app.js
+./build.sh 1.1.1
 ```
+
+The version is recorded in `VERSION` and stamped onto both asset URLs:
+
+```html
+<link rel="stylesheet" href="styles.css?v=1.1.0">
+<script src="app.js?v=1.1.0"></script>
+```
+
+Browsers can safely retain the versioned CSS and JavaScript. A new version changes their URLs and forces a fresh request. The generated HTML also contains no-cache metadata, an Apache `.htaccess` rule, and a Netlify/Cloudflare-style `_headers` file instructing the server not to cache `index.html`. If another web server is used, configure the same `Cache-Control: no-cache, no-store, must-revalidate` response header for `index.html`.
+
+The source page uses `?v=dev`, so it continues to work when opened directly without pretending to be a production build.
 
 Minification is kept lightweight so the deployed editor starts quickly. Heavy control-flow obfuscation was deliberately avoided because it more than tripled the JavaScript size and slowed initialisation.
 

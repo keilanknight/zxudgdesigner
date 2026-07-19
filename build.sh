@@ -1,0 +1,58 @@
+#!/bin/sh
+
+set -eu
+
+if [ "$#" -ne 1 ]; then
+  echo "Usage: ./build.sh VERSION" >&2
+  echo "Example: ./build.sh 1.1.1" >&2
+  exit 1
+fi
+
+build_version="$1"
+
+case "$build_version" in
+  *[!0-9A-Za-z._-]*|"")
+    echo "Invalid version: $build_version" >&2
+    exit 1
+    ;;
+esac
+
+if [ -f VERSION ]; then
+  current_version=$(sed -n '1p' VERSION)
+
+  if [ "$build_version" = "$current_version" ]; then
+    echo "Version $build_version has already been built; choose a new version." >&2
+    exit 1
+  fi
+fi
+
+mkdir -p dist
+cp index.html dist/index.html
+
+BUILD_VERSION="$build_version" perl -0pi -e '
+  s/([?&]v=)dev\b/$1$ENV{BUILD_VERSION}/g;
+' dist/index.html
+
+npx --yes clean-css-cli -o dist/styles.css styles.css
+npx --yes terser app.js \
+  --compress passes=3,unsafe_arrows=true \
+  --mangle \
+  --ecma 2017 \
+  --output dist/app.js
+
+printf '%s\n' "$build_version" > VERSION
+
+printf '%s\n' \
+  '<IfModule mod_headers.c>' \
+  '  <Files "index.html">' \
+  '    Header set Cache-Control "no-cache, no-store, must-revalidate"' \
+  '    Header set Pragma "no-cache"' \
+  '    Header set Expires "0"' \
+  '  </Files>' \
+  '</IfModule>' > dist/.htaccess
+
+printf '%s\n' \
+  '/index.html' \
+  '  Cache-Control: no-cache, no-store, must-revalidate' > dist/_headers
+
+echo "Built dist version $build_version"

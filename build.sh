@@ -29,16 +29,24 @@ fi
 mkdir -p dist
 cp index.html dist/index.html
 
+find dist -maxdepth 1 -type f \( \
+  -name 'app.js' -o \
+  -name 'styles.css' -o \
+  -name 'app-*.js' -o \
+  -name 'styles-*.css' \
+\) -delete
+
 BUILD_VERSION="$build_version" perl -0pi -e '
-  s/([?&]v=)dev\b/$1$ENV{BUILD_VERSION}/g;
+  s/styles\.css\?v=dev/styles-$ENV{BUILD_VERSION}.css/g;
+  s/app\.js\?v=dev/app-$ENV{BUILD_VERSION}.js/g;
 ' dist/index.html
 
-npx --yes clean-css-cli -o dist/styles.css styles.css
+npx --yes clean-css-cli -o "dist/styles-$build_version.css" styles.css
 npx --yes terser app.js \
   --compress passes=3,unsafe_arrows=true \
   --mangle \
   --ecma 2017 \
-  --output dist/app.js
+  --output "dist/app-$build_version.js"
 
 printf '%s\n' "$build_version" > VERSION
 

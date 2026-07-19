@@ -221,11 +221,11 @@ The build script uses Clean CSS for the stylesheet and Terser for JavaScript com
 The version is recorded in `VERSION` and stamped onto both asset URLs:
 
 ```html
-<link rel="stylesheet" href="styles.css?v=1.1.0">
-<script src="app.js?v=1.1.0"></script>
+<link rel="stylesheet" href="styles-1.1.1.css">
+<script src="app-1.1.1.js"></script>
 ```
 
-Browsers can safely retain the versioned CSS and JavaScript. A new version changes their URLs and forces a fresh request. The generated HTML also contains no-cache metadata, an Apache `.htaccess` rule, and a Netlify/Cloudflare-style `_headers` file instructing the server not to cache `index.html`. If another web server is used, configure the same `Cache-Control: no-cache, no-store, must-revalidate` response header for `index.html`.
+Browsers can safely retain the versioned CSS and JavaScript filenames. A new build creates new filenames, updates the generated HTML, and removes obsolete generated assets from `dist/`. The generated HTML also contains no-cache metadata, an Apache `.htaccess` rule, and a Netlify/Cloudflare-style `_headers` file instructing the server not to cache `index.html`. If another web server is used, configure the same `Cache-Control: no-cache, no-store, must-revalidate` response header for `index.html`.
 
 The source page uses `?v=dev`, so it continues to work when opened directly without pretending to be a production build.
 

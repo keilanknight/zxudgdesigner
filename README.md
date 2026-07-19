@@ -42,7 +42,7 @@ The editor provides four banks of 21 UDGs, giving 84 available designs in total.
 - Switch banks with the Bank 1–4 buttons.
 - Press `1`–`4` when not typing in a form field to change the active screen-design bank.
 - Press `A`–`U` to select the corresponding UDG.
-- Every UDG remembers its own default INK and PAPER preview colours.
+- Every UDG remembers its own default INK, PAPER, and BRIGHT preview settings.
 - Banks can be mixed freely on the same designed screen.
 
 Only UDGs containing pixel data are packed into a TAP export. Blank slots do not consume eight bytes each in the graphics package.
@@ -63,7 +63,7 @@ Changes immediately update the palette, repeated tile preview, BASIC data, scree
 
 ### Repeated tile preview
 
-The 6×6 preview makes repeating edges and patterns easier to spot. Its INK and PAPER controls belong to the selected UDG, rather than the screen painter.
+The 6×6 preview makes repeating edges and patterns easier to spot. Its INK, PAPER, and BRIGHT controls belong to the selected UDG, rather than the screen painter.
 
 Use it to check whether:
 
@@ -93,7 +93,7 @@ Use the copy buttons to place either the selected `DATA` statement or the curren
 Each project can contain multiple 32×24 Spectrum screens.
 
 - Create, duplicate, delete, and navigate between screens.
-- Give each screen its own default INK and PAPER.
+- Give each screen its own default INK, PAPER, and BRIGHT setting.
 - Choose a UDG from the colour preview palette beside the canvas.
 - Override the current painting foreground and background without changing the UDG's saved defaults.
 - Change zoom from 1× to 4×.
@@ -102,7 +102,7 @@ Each project can contain multiple 32×24 Spectrum screens.
 
 The UDG chooser responds to the zoom level: it stays broad when the canvas is small and becomes progressively narrower as the canvas grows.
 
-Every painted cell stores its bank, UDG letter, INK, and PAPER. A screen can therefore use Bank 1 A beside Bank 4 A and colour the two instances differently.
+Every painted cell stores its bank, UDG letter, INK, PAPER, and BRIGHT setting. A screen can therefore use Bank 1 A beside Bank 4 A and colour the two instances differently.
 
 ### Screen tools
 
@@ -144,12 +144,12 @@ The copied region is also included in saved project data, so it is available aga
 **Save Project** downloads a readable JSON file containing:
 
 - All four UDG banks and their pixel data.
-- Per-UDG default INK and PAPER colours.
+- Per-UDG default INK, PAPER, and BRIGHT settings.
 - Every screen and painted cell.
 - Each screen's preferred UDG bank and default colours.
 - The selected bank, UDG, screen, tools, zoom, grid state, and clipboard region.
 
-**Load Project** restores that file. The current project format is version 4. Older single-bank project files remain supported and are loaded into Bank 1; the other banks begin empty.
+**Load Project** restores that file. The current project format is version 5. Older single-bank project files remain supported and are loaded into Bank 1; the other banks begin empty. Projects saved before BRIGHT support load with BRIGHT on.
 
 Project JSON files are editable, but keeping their array dimensions intact is important. Invalid files are rejected rather than partially loaded.
 
@@ -190,6 +190,8 @@ If the complete package would extend beyond address `65535`, export stops with a
 ## Spectrum compatibility notes
 
 The original 48K Spectrum provides 21 UDG positions corresponding to A–U. In 128 BASIC, the final two character codes are used by the `SPECTRUM` and `PLAY` tokens, so T and U are not normally available in the same way.
+
+Each Spectrum attribute byte applies one INK, one PAPER, and one shared BRIGHT bit to a complete 8×8 cell. BRIGHT therefore changes both colours together. Bright black remains black, giving 15 visually distinct colours rather than 16.
 
 The machine-code renderer draws bitmap data directly and can still use every exported tile. If a BASIC program intends to print UDGs T or U itself, test that behaviour in the exact BASIC mode being targeted.
 

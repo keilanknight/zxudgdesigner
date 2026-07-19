@@ -14,8 +14,23 @@ const spectrumColours = {
   Green: "#00cd00",
   Cyan: "#00cdcd",
   Yellow: "#cdcd00",
+  White: "#cdcdcd"
+};
+
+const spectrumBrightColours = {
+  Black: "#000000",
+  Blue: "#0000ff",
+  Red: "#ff0000",
+  Magenta: "#ff00ff",
+  Green: "#00ff00",
+  Cyan: "#00ffff",
+  Yellow: "#ffff00",
   White: "#ffffff"
 };
+
+function spectrumColour(name, bright = true) {
+  return (bright ? spectrumBrightColours : spectrumColours)[name];
+}
 
 const udgBanks = Array.from(
   { length: UDG_BANK_COUNT },
@@ -29,7 +44,7 @@ const udgColourBanks = Array.from(
   { length: UDG_BANK_COUNT },
   () => Array.from(
     { length: UDG_COUNT },
-    () => ({ ink: "White", paper: "Black" })
+    () => ({ ink: "White", paper: "Black", bright: true })
   )
 );
 
@@ -37,10 +52,16 @@ let selectedBank = 0;
 let udgs = udgBanks[selectedBank];
 let udgColours = udgColourBanks[selectedBank];
 
-function createBlankScreen(defaultInk = "White", defaultPaper = "Black", activeBank = 0) {
+function createBlankScreen(
+  defaultInk = "White",
+  defaultPaper = "Black",
+  activeBank = 0,
+  defaultBright = true
+) {
   return {
     defaultInk,
     defaultPaper,
+    defaultBright,
     activeBank,
     cells: Array.from(
       { length: SCREEN_ROWS },
@@ -79,12 +100,14 @@ const editor = document.getElementById("editor");
 const tilePreview = document.getElementById("tilePreview");
 const udgInkSelect = document.getElementById("udgInk");
 const udgPaperSelect = document.getElementById("udgPaper");
+const udgBrightSelect = document.getElementById("udgBright");
 const screen = document.getElementById("screen");
 const selectedLabel = document.getElementById("selectedLabel");
 const dataOutput = document.getElementById("dataOutput");
 const allDataOutput = document.getElementById("allDataOutput");
 const foregroundSelect = document.getElementById("foreground");
 const backgroundSelect = document.getElementById("background");
+const brightSelect = document.getElementById("bright");
 const status = document.getElementById("status");
 const modeIndicator = document.getElementById("modeIndicator");
 const projectNameInput = document.getElementById("projectName");
@@ -92,6 +115,7 @@ const projectFileInput = document.getElementById("projectFile");
 const includePokeCheckbox = document.getElementById("includePoke");
 const defaultInkSelect = document.getElementById("defaultInk");
 const defaultPaperSelect = document.getElementById("defaultPaper");
+const defaultBrightSelect = document.getElementById("defaultBright");
 const screenNumber = document.getElementById("screenNumber");
 const tapNameInput = document.getElementById("tapName");
 const tapStatus = document.getElementById("tapStatus");
@@ -132,8 +156,11 @@ function buildColourSelectors() {
   backgroundSelect.value = "Black";
   udgInkSelect.value = "White";
   udgPaperSelect.value = "Black";
+  udgBrightSelect.value = "on";
   defaultInkSelect.value = "White";
   defaultPaperSelect.value = "Black";
+  defaultBrightSelect.value = "on";
+  brightSelect.value = "on";
 }
 
 function selectUdgForScreen(index) {
@@ -141,6 +168,7 @@ function selectUdgForScreen(index) {
   currentScreenObject().activeBank = selectedBank;
   foregroundSelect.value = udgColours[index].ink;
   backgroundSelect.value = udgColours[index].paper;
+  brightSelect.value = udgColours[index].bright ? "on" : "off";
   refreshAll();
 }
 
@@ -153,6 +181,7 @@ function selectBank(index, useForScreen = false) {
     currentScreenObject().activeBank = selectedBank;
     foregroundSelect.value = udgColours[selectedUdg].ink;
     backgroundSelect.value = udgColours[selectedUdg].paper;
+    brightSelect.value = udgColours[selectedUdg].bright ? "on" : "off";
   }
 
   refreshAll();
@@ -379,7 +408,8 @@ function paintCell(row, col) {
     bank: selectedBank,
     udg: selectedUdg,
     foreground: foregroundSelect.value,
-    background: backgroundSelect.value
+    background: backgroundSelect.value,
+    bright: brightSelect.value === "on"
   };
 
   drawScreenCell(row, col);
@@ -449,6 +479,7 @@ function refreshScreenControls() {
 
   defaultInkSelect.value = currentScreenObject().defaultInk;
   defaultPaperSelect.value = currentScreenObject().defaultPaper;
+  defaultBrightSelect.value = currentScreenObject().defaultBright ? "on" : "off";
   selectBank(currentScreenObject().activeBank, true);
   refreshWholeScreen();
 }
@@ -457,6 +488,7 @@ function cloneScreen(screenObject) {
   return {
     defaultInk: screenObject.defaultInk,
     defaultPaper: screenObject.defaultPaper,
+    defaultBright: screenObject.defaultBright,
     activeBank: screenObject.activeBank,
     cells: screenObject.cells.map((row) =>
       row.map((cell) => cloneCell(cell))
@@ -542,9 +574,9 @@ function refreshTilePreview() {
   const colours = udgColours[selectedUdg];
 
   context.imageSmoothingEnabled = false;
-  context.fillStyle = spectrumColours[colours.paper];
+  context.fillStyle = spectrumColour(colours.paper, colours.bright);
   context.fillRect(0, 0, tilePreview.width, tilePreview.height);
-  context.fillStyle = spectrumColours[colours.ink];
+  context.fillStyle = spectrumColour(colours.ink, colours.bright);
 
   for (let tileRow = 0; tileRow < 6; tileRow++) {
     for (let tileCol = 0; tileCol < 6; tileCol++) {
@@ -571,9 +603,9 @@ function refreshScreenUdgPreview(index) {
   const colours = udgColours[index];
 
   context.imageSmoothingEnabled = false;
-  context.fillStyle = spectrumColours[colours.paper];
+  context.fillStyle = spectrumColour(colours.paper, colours.bright);
   context.fillRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = spectrumColours[colours.ink];
+  context.fillStyle = spectrumColour(colours.ink, colours.bright);
 
   for (let row = 0; row < GRID_SIZE; row++) {
     for (let col = 0; col < GRID_SIZE; col++) {
@@ -636,7 +668,10 @@ function drawScreenCell(row, col) {
   context.imageSmoothingEnabled = false;
 
   if (cell === null) {
-    context.fillStyle = spectrumColours[currentScreenObject().defaultPaper];
+    context.fillStyle = spectrumColour(
+      currentScreenObject().defaultPaper,
+      currentScreenObject().defaultBright
+    );
     context.fillRect(0, 0, canvas.width, canvas.height);
     return;
   }
@@ -644,9 +679,9 @@ function drawScreenCell(row, col) {
   const cellBank = Number.isInteger(cell.bank) ? cell.bank : 0;
   const graphic = udgBanks[cellBank][cell.udg];
 
-  context.fillStyle = spectrumColours[cell.background];
+  context.fillStyle = spectrumColour(cell.background, cell.bright !== false);
   context.fillRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = spectrumColours[cell.foreground];
+  context.fillStyle = spectrumColour(cell.foreground, cell.bright !== false);
 
   for (let pixelRow = 0; pixelRow < GRID_SIZE; pixelRow++) {
     for (let pixelCol = 0; pixelCol < GRID_SIZE; pixelCol++) {
@@ -685,6 +720,7 @@ function refreshAll() {
 
   udgInkSelect.value = udgColours[selectedUdg].ink;
   udgPaperSelect.value = udgColours[selectedUdg].paper;
+  udgBrightSelect.value = udgColours[selectedUdg].bright ? "on" : "off";
 
   screenUdgList.querySelectorAll(".screen-udg-choice").forEach((button, index) => {
     button.classList.toggle("selected", index === selectedUdg);
@@ -882,6 +918,12 @@ udgPaperSelect.addEventListener("change", () => {
   refreshScreenUdgPreview(selectedUdg);
 });
 
+udgBrightSelect.addEventListener("change", () => {
+  udgColours[selectedUdg].bright = udgBrightSelect.value === "on";
+  refreshTilePreview();
+  refreshScreenUdgPreview(selectedUdg);
+});
+
 document.addEventListener("keydown", (event) => {
   const target = event.target;
 
@@ -922,6 +964,11 @@ defaultPaperSelect.addEventListener("change", () => {
   refreshWholeScreen();
 });
 
+defaultBrightSelect.addEventListener("change", () => {
+  currentScreenObject().defaultBright = defaultBrightSelect.value === "on";
+  refreshWholeScreen();
+});
+
 document.getElementById("previousScreen").addEventListener("click", () => {
   selectedScreen =
     (selectedScreen - 1 + screens.length) % screens.length;
@@ -937,7 +984,8 @@ document.getElementById("newScreen").addEventListener("click", () => {
   screens.push(createBlankScreen(
     currentScreenObject().defaultInk,
     currentScreenObject().defaultPaper,
-    selectedBank
+    selectedBank,
+    currentScreenObject().defaultBright
   ));
   selectedScreen = screens.length - 1;
   refreshScreenControls();
@@ -956,7 +1004,8 @@ document.getElementById("deleteScreen").addEventListener("click", () => {
     screens[0] = createBlankScreen(
       currentScreenObject().defaultInk,
       currentScreenObject().defaultPaper,
-      selectedBank
+      selectedBank,
+      currentScreenObject().defaultBright
     );
     refreshScreenControls();
     showStatus("Only screen cleared");
@@ -993,7 +1042,7 @@ function safeProjectFilename(name) {
 function getProjectData() {
   return {
     format: "zx-spectrum-udg-editor-project",
-    version: 4,
+    version: 5,
     projectName: projectNameInput.value.trim() || "My Spectrum Graphics",
     savedAt: new Date().toISOString(),
     selectedBank,
@@ -1009,6 +1058,7 @@ function getProjectData() {
     settings: {
       foreground: foregroundSelect.value,
       background: backgroundSelect.value,
+      bright: brightSelect.value === "on",
       zoom: document.getElementById("zoom").value,
       gridOff: screen.classList.contains("grid-off"),
       screenMode,
@@ -1130,7 +1180,8 @@ function loadProjectData(project) {
           : "White",
         paper: savedColours && spectrumColours[savedColours.paper]
           ? savedColours.paper
-          : "Black"
+          : "Black",
+        bright: !savedColours || savedColours.bright !== false
       };
     }
   }
@@ -1147,7 +1198,8 @@ function loadProjectData(project) {
       spectrumColours[savedScreen.defaultPaper] ? savedScreen.defaultPaper : "Black",
       Number.isInteger(savedScreen.activeBank)
         ? Math.max(0, Math.min(UDG_BANK_COUNT - 1, savedScreen.activeBank))
-        : 0
+        : 0,
+      savedScreen.defaultBright !== false
     );
 
     for (let row = 0; row < SCREEN_ROWS; row++) {
@@ -1173,7 +1225,8 @@ function loadProjectData(project) {
               : "White",
             background: spectrumColours[cell.background]
               ? cell.background
-              : "Black"
+              : "Black",
+            bright: cell.bright !== false
           };
         }
       }
@@ -1205,6 +1258,8 @@ function loadProjectData(project) {
   backgroundSelect.value = spectrumColours[settings.background]
     ? settings.background
     : "Black";
+
+  brightSelect.value = settings.bright !== false ? "on" : "off";
 
   const zoomValue = ["8", "12", "16", "24", "32"].includes(String(settings.zoom))
     ? String(settings.zoom)
@@ -1625,16 +1680,21 @@ function buildRenderer(
   return asm.finish(TAP_RENDERER_ADDRESS);
 }
 
-function colourAttribute(ink, paper) {
+function colourAttribute(ink, paper, bright = true) {
   return (
     spectrumColourNumbers[ink] +
-    spectrumColourNumbers[paper] * 8
+    spectrumColourNumbers[paper] * 8 +
+    (bright ? 64 : 0)
   );
 }
 
 function compressScreenForTap(screenObject, packedTileMap) {
   const output = [
-    colourAttribute(screenObject.defaultInk, screenObject.defaultPaper),
+    colourAttribute(
+      screenObject.defaultInk,
+      screenObject.defaultPaper,
+      screenObject.defaultBright
+    ),
     screenObject.activeBank
   ];
 
@@ -1680,7 +1740,7 @@ function compressScreenForTap(screenObject, packedTileMap) {
 
       output.push(
         tile === undefined ? 255 : tile,
-        colourAttribute(cell.foreground, cell.background)
+        colourAttribute(cell.foreground, cell.background, cell.bright !== false)
       );
     });
 

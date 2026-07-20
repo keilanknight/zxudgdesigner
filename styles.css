@@ -196,6 +196,7 @@ h2 {
   display: grid;
   grid-template-columns: repeat(8, 38px);
   grid-template-rows: repeat(8, 38px);
+  width: max-content;
   gap: 1px;
   padding: 1px;
   background: #777777;

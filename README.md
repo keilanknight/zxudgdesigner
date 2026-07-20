@@ -95,6 +95,7 @@ Use the copy buttons to place either the selected `DATA` statement or the curren
 Each project can contain multiple 32×24 Spectrum screens.
 
 - Create, duplicate, delete, and navigate between screens.
+- Undo or redo the most recent screen edit as a single action.
 - Give each screen its own default INK, PAPER, and BRIGHT setting.
 - Choose a UDG from the colour preview palette beside the canvas.
 - Override the current painting foreground and background without changing the UDG's saved defaults.
@@ -155,6 +156,8 @@ The copied region is also included in saved project data, so it is available aga
 - The selected bank, UDG, screen, tools, zoom, grid state, and clipboard region.
 
 **Load Project** restores that file. The current project format is version 5. Older single-bank project files remain supported and are loaded into Bank 1; the other banks begin empty. Projects saved before BRIGHT support load with BRIGHT on.
+
+The editor also keeps an automatic recovery copy in the browser's local storage. Refreshing or reopening the page restores the latest work automatically, and the browser warns before leaving while changes have not been saved to a project file. Local recovery belongs to that browser and site address, so **Save Project** is still the portable backup.
 
 Project JSON files are editable, but keeping their array dimensions intact is important. Invalid files are rejected rather than partially loaded.
 

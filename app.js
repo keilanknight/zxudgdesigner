@@ -5,6 +5,7 @@ const UDG_BANK_COUNT = 4;
 const GRID_SIZE = 8;
 const SCREEN_COLS = 32;
 const SCREEN_ROWS = 24;
+const RECOVERY_STORAGE_KEY = "zx-udg-designer-recovery-v1";
 
 const spectrumColours = {
   Black: "#000000",
@@ -93,6 +94,10 @@ let screenMode = "paint";
 let dragStart = null;
 let dragCurrent = null;
 let copiedRegion = null;
+let screenUndoState = null;
+let screenRedoState = null;
+let projectHasUnsavedChanges = false;
+let recoveryTimer = null;
 
 const udgList = document.getElementById("udgList");
 const editorBankTabs = document.getElementById("editorBankTabs");
@@ -120,6 +125,8 @@ const defaultInkSelect = document.getElementById("defaultInk");
 const defaultPaperSelect = document.getElementById("defaultPaper");
 const defaultBrightSelect = document.getElementById("defaultBright");
 const screenNumber = document.getElementById("screenNumber");
+const undoScreenButton = document.getElementById("undoScreen");
+const redoScreenButton = document.getElementById("redoScreen");
 const tapNameInput = document.getElementById("tapName");
 const tapStatus = document.getElementById("tapStatus");
 const tapInstructions = document.getElementById("tapInstructions");
@@ -134,6 +141,41 @@ function cloneGrid(grid) {
 
 function cloneCell(cell) {
   return cell === null ? null : { ...cell };
+}
+
+function captureScreenState() {
+  return {
+    selectedScreen,
+    screens: screens.map((screenObject) => cloneScreen(screenObject))
+  };
+}
+
+function updateScreenUndoButtons() {
+  undoScreenButton.disabled = screenUndoState === null;
+  redoScreenButton.disabled = screenRedoState === null;
+}
+
+function recordScreenUndo() {
+  screenUndoState = captureScreenState();
+  screenRedoState = null;
+  updateScreenUndoButtons();
+}
+
+function restoreScreenState(state) {
+  screens.length = 0;
+  state.screens.forEach((screenObject) => screens.push(cloneScreen(screenObject)));
+  selectedScreen = Math.max(0, Math.min(screens.length - 1, state.selectedScreen));
+  refreshScreenControls();
+}
+
+function scheduleRecoverySave() {
+  window.clearTimeout(recoveryTimer);
+  recoveryTimer = window.setTimeout(saveRecoveryProject, 250);
+}
+
+function markProjectChanged() {
+  projectHasUnsavedChanges = true;
+  scheduleRecoverySave();
 }
 
 function showStatus(message) {
@@ -393,6 +435,7 @@ function handleScreenPointerDown(row, col, button, isTouchPointer) {
   const rightClick = button === 2;
 
   if (screenMode === "paint") {
+    recordScreenUndo();
     screenDrawing = true;
     screenDrawAction = isTouchPointer
       ? (currentScreen()[row][col] ? "erase" : "paint")
@@ -402,6 +445,7 @@ function handleScreenPointerDown(row, col, button, isTouchPointer) {
   }
 
   if (screenMode === "stamp") {
+    recordScreenUndo();
     screenDrawing = true;
     screenDrawAction = isTouchPointer
       ? (currentScreen()[row][col] ? "erase" : "stamp")
@@ -415,6 +459,7 @@ function handleScreenPointerDown(row, col, button, isTouchPointer) {
     return;
   }
 
+  if (screenMode === "rectangle") recordScreenUndo();
   dragStart = { row, col };
   dragCurrent = { row, col };
   screenDrawing = true;
@@ -483,6 +528,7 @@ function applyScreenAction(row, col, action) {
   if (action === "erase") {
     currentScreen()[row][col] = null;
     drawScreenCell(row, col);
+    markProjectChanged();
     return;
   }
 
@@ -499,6 +545,7 @@ function paintCell(row, col) {
   };
 
   drawScreenCell(row, col);
+  markProjectChanged();
 }
 
 function pasteRegion(startRow, startCol) {
@@ -506,6 +553,8 @@ function pasteRegion(startRow, startCol) {
     showStatus("Copy a region first");
     return;
   }
+
+  recordScreenUndo();
 
   for (let row = 0; row < copiedRegion.length; row++) {
     for (let col = 0; col < copiedRegion[row].length; col++) {
@@ -613,12 +662,15 @@ function setScreenMode(mode) {
 
 function replaceSelectedGrid(newGrid) {
   udgs[selectedUdg] = newGrid;
+  markProjectChanged();
   refreshAll();
   refreshPaintedCopies(selectedUdg);
 }
 
 function setEditorPixel(row, col, value) {
+  if (udgs[selectedUdg][row][col] === value) return;
   udgs[selectedUdg][row][col] = value;
+  markProjectChanged();
   refreshEditor();
   refreshUdgPreview(selectedUdg);
   refreshTilePreview();
@@ -883,6 +935,7 @@ document.getElementById("duplicateUdg").addEventListener("click", () => {
   udgs[target] = cloneGrid(udgs[selectedUdg]);
   udgColours[target] = { ...udgColours[selectedUdg] };
   selectedUdg = target;
+  markProjectChanged();
   refreshAll();
   refreshPaintedCopies(target);
   showStatus(
@@ -969,6 +1022,7 @@ document.getElementById("stampMode").addEventListener("click", () => setScreenMo
 document.getElementById("toggleGrid").addEventListener("click", (event) => {
   const off = screen.classList.toggle("grid-off");
   event.currentTarget.textContent = off ? "Grid On" : "Grid Off";
+  markProjectChanged();
 });
 
 function applyScreenZoom(zoomValue) {
@@ -1007,6 +1061,7 @@ function applyScreenZoom(zoomValue) {
 
 document.getElementById("zoom").addEventListener("change", (event) => {
   applyScreenZoom(event.target.value);
+  markProjectChanged();
 });
 
 window.addEventListener("resize", () => {
@@ -1014,22 +1069,33 @@ window.addEventListener("resize", () => {
   if (zoomSelect.value === "fit") applyScreenZoom("fit");
 });
 
-includePokeCheckbox.addEventListener("change", refreshDataOutput);
+includePokeCheckbox.addEventListener("change", () => {
+  refreshDataOutput();
+  markProjectChanged();
+});
+
+projectNameInput.addEventListener("input", markProjectChanged);
+foregroundSelect.addEventListener("change", markProjectChanged);
+backgroundSelect.addEventListener("change", markProjectChanged);
+brightSelect.addEventListener("change", markProjectChanged);
 
 udgInkSelect.addEventListener("change", () => {
   udgColours[selectedUdg].ink = udgInkSelect.value;
+  markProjectChanged();
   refreshTilePreview();
   refreshScreenUdgPreview(selectedUdg);
 });
 
 udgPaperSelect.addEventListener("change", () => {
   udgColours[selectedUdg].paper = udgPaperSelect.value;
+  markProjectChanged();
   refreshTilePreview();
   refreshScreenUdgPreview(selectedUdg);
 });
 
 udgBrightSelect.addEventListener("change", () => {
   udgColours[selectedUdg].bright = udgBrightSelect.value === "on";
+  markProjectChanged();
   refreshTilePreview();
   refreshScreenUdgPreview(selectedUdg);
 });
@@ -1065,17 +1131,23 @@ document.addEventListener("keydown", (event) => {
 });
 
 defaultInkSelect.addEventListener("change", () => {
+  recordScreenUndo();
   currentScreenObject().defaultInk = defaultInkSelect.value;
+  markProjectChanged();
   refreshWholeScreen();
 });
 
 defaultPaperSelect.addEventListener("change", () => {
+  recordScreenUndo();
   currentScreenObject().defaultPaper = defaultPaperSelect.value;
+  markProjectChanged();
   refreshWholeScreen();
 });
 
 defaultBrightSelect.addEventListener("change", () => {
+  recordScreenUndo();
   currentScreenObject().defaultBright = defaultBrightSelect.value === "on";
+  markProjectChanged();
   refreshWholeScreen();
 });
 
@@ -1091,6 +1163,7 @@ document.getElementById("nextScreen").addEventListener("click", () => {
 });
 
 document.getElementById("newScreen").addEventListener("click", () => {
+  recordScreenUndo();
   screens.push(createBlankScreen(
     currentScreenObject().defaultInk,
     currentScreenObject().defaultPaper,
@@ -1098,18 +1171,22 @@ document.getElementById("newScreen").addEventListener("click", () => {
     currentScreenObject().defaultBright
   ));
   selectedScreen = screens.length - 1;
+  markProjectChanged();
   refreshScreenControls();
   showStatus("New screen created");
 });
 
 document.getElementById("duplicateScreen").addEventListener("click", () => {
+  recordScreenUndo();
   screens.splice(selectedScreen + 1, 0, cloneScreen(currentScreenObject()));
   selectedScreen++;
+  markProjectChanged();
   refreshScreenControls();
   showStatus("Screen duplicated");
 });
 
 document.getElementById("deleteScreen").addEventListener("click", () => {
+  recordScreenUndo();
   if (screens.length === 1) {
     screens[0] = createBlankScreen(
       currentScreenObject().defaultInk,
@@ -1118,22 +1195,66 @@ document.getElementById("deleteScreen").addEventListener("click", () => {
       currentScreenObject().defaultBright
     );
     refreshScreenControls();
+    markProjectChanged();
     showStatus("Only screen cleared");
     return;
   }
 
   screens.splice(selectedScreen, 1);
   selectedScreen = Math.min(selectedScreen, screens.length - 1);
+  markProjectChanged();
   refreshScreenControls();
   showStatus("Screen deleted");
 });
 
 document.getElementById("clearScreen").addEventListener("click", () => {
+  recordScreenUndo();
   for (let row = 0; row < SCREEN_ROWS; row++) {
     for (let col = 0; col < SCREEN_COLS; col++) {
       currentScreen()[row][col] = null;
       drawScreenCell(row, col);
     }
+  }
+  markProjectChanged();
+});
+
+undoScreenButton.addEventListener("click", () => {
+  if (!screenUndoState) return;
+  screenRedoState = captureScreenState();
+  const state = screenUndoState;
+  screenUndoState = null;
+  restoreScreenState(state);
+  updateScreenUndoButtons();
+  markProjectChanged();
+  showStatus("Screen change undone");
+});
+
+redoScreenButton.addEventListener("click", () => {
+  if (!screenRedoState) return;
+  screenUndoState = captureScreenState();
+  const state = screenRedoState;
+  screenRedoState = null;
+  restoreScreenState(state);
+  updateScreenUndoButtons();
+  markProjectChanged();
+  showStatus("Screen change redone");
+});
+
+document.addEventListener("keydown", (event) => {
+  const target = event.target;
+  const isTyping = target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target.isContentEditable;
+
+  if (isTyping || !(event.ctrlKey || event.metaKey) || event.altKey) return;
+
+  if (event.key.toLowerCase() === "z") {
+    event.preventDefault();
+    (event.shiftKey ? redoScreenButton : undoScreenButton).click();
+  } else if (event.key.toLowerCase() === "y") {
+    event.preventDefault();
+    redoScreenButton.click();
   }
 });
 
@@ -1180,6 +1301,55 @@ function getProjectData() {
   };
 }
 
+function saveRecoveryProject() {
+  window.clearTimeout(recoveryTimer);
+  recoveryTimer = null;
+
+  try {
+    localStorage.setItem(RECOVERY_STORAGE_KEY, JSON.stringify({
+      dirty: projectHasUnsavedChanges,
+      project: getProjectData()
+    }));
+  } catch (error) {
+    // A blocked or full localStorage must not stop normal editing or file saves.
+  }
+}
+
+function restoreRecoveryProject() {
+  try {
+    const savedRecovery = localStorage.getItem(RECOVERY_STORAGE_KEY);
+    if (!savedRecovery) return false;
+
+    const recovery = JSON.parse(savedRecovery);
+    if (!recovery || !recovery.project) return false;
+
+    loadProjectData(recovery.project, {
+      dirty: recovery.dirty === true,
+      statusMessage: "Recovered your last project"
+    });
+    return true;
+  } catch (error) {
+    try {
+      localStorage.removeItem(RECOVERY_STORAGE_KEY);
+    } catch (storageError) {
+      // Ignore storage restrictions and continue with a blank project.
+    }
+    return false;
+  }
+}
+
+window.addEventListener("beforeunload", (event) => {
+  saveRecoveryProject();
+  if (!projectHasUnsavedChanges) return;
+
+  event.preventDefault();
+  event.returnValue = "";
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") saveRecoveryProject();
+});
+
 function saveProjectFile() {
   const project = getProjectData();
   const json = JSON.stringify(project, null, 2);
@@ -1194,6 +1364,8 @@ function saveProjectFile() {
   link.remove();
 
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  projectHasUnsavedChanges = false;
+  saveRecoveryProject();
   showStatus("Project saved");
 }
 
@@ -1258,7 +1430,7 @@ function validateProjectData(project) {
   });
 }
 
-function loadProjectData(project) {
+function loadProjectData(project, options = {}) {
   validateProjectData(project);
 
   projectNameInput.value =
@@ -1393,9 +1565,15 @@ function loadProjectData(project) {
       )
     : null;
 
+  screenUndoState = null;
+  screenRedoState = null;
+  projectHasUnsavedChanges = options.dirty === true;
+  updateScreenUndoButtons();
+
   refreshAll();
   refreshScreenControls();
-  showStatus("Project loaded");
+  saveRecoveryProject();
+  showStatus(options.statusMessage || "Project loaded");
 }
 
 function openProjectFile(file) {
@@ -2109,6 +2287,7 @@ buildUdgList();
 buildScreenUdgList();
 buildEditor();
 buildScreen();
+restoreRecoveryProject();
 refreshAll();
 refreshScreenControls();
 refreshTapInstructions();

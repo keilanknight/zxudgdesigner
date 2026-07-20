@@ -161,64 +161,74 @@
     </div>
     <div class="panel-content">
 
-    <div class="screen-nav">
-      <button id="previousScreen" type="button">◀ Previous</button>
-      <span id="screenNumber" class="screen-number">Screen 1 of 1</span>
-      <button id="nextScreen" type="button">Next ▶</button>
-      <button id="newScreen" type="button">New Screen</button>
-      <button id="duplicateScreen" type="button">Duplicate Screen</button>
-      <button id="deleteScreen" type="button">Delete Screen</button>
-    </div>
+    <details class="mobile-details screen-settings-details" open>
+      <summary>Screens and Navigation</summary>
+      <div class="mobile-details-content">
+        <div class="screen-nav">
+          <button id="previousScreen" type="button">◀ Previous</button>
+          <span id="screenNumber" class="screen-number">Screen 1 of 1</span>
+          <button id="nextScreen" type="button">Next ▶</button>
+          <button id="newScreen" type="button">New Screen</button>
+          <button id="duplicateScreen" type="button">Duplicate Screen</button>
+          <button id="deleteScreen" type="button">Delete Screen</button>
+        </div>
+      </div>
+    </details>
 
-    <div class="colour-row">
-      <label>
-        Screen default INK
-        <select id="defaultInk"></select>
-      </label>
+    <details class="mobile-details screen-settings-details" open>
+      <summary>Screen and Paint Settings</summary>
+      <div class="mobile-details-content">
+        <div class="colour-row">
+          <label>
+            Screen default INK
+            <select id="defaultInk"></select>
+          </label>
 
-      <label>
-        Screen default PAPER
-        <select id="defaultPaper"></select>
-      </label>
+          <label>
+            Screen default PAPER
+            <select id="defaultPaper"></select>
+          </label>
 
-      <label>
-        Screen default BRIGHT
-        <select id="defaultBright">
-          <option value="on" selected>On</option>
-          <option value="off">Off</option>
-        </select>
-      </label>
+          <label>
+            Screen default BRIGHT
+            <select id="defaultBright">
+              <option value="on" selected>On</option>
+              <option value="off">Off</option>
+            </select>
+          </label>
 
-      <label>
-        Foreground
-        <select id="foreground"></select>
-      </label>
+          <label>
+            Foreground
+            <select id="foreground"></select>
+          </label>
 
-      <label>
-        Background
-        <select id="background"></select>
-      </label>
+          <label>
+            Background
+            <select id="background"></select>
+          </label>
 
-      <label>
-        BRIGHT
-        <select id="bright">
-          <option value="on" selected>On</option>
-          <option value="off">Off</option>
-        </select>
-      </label>
+          <label>
+            BRIGHT
+            <select id="bright">
+              <option value="on" selected>On</option>
+              <option value="off">Off</option>
+            </select>
+          </label>
 
-      <label>
-        Zoom
-        <select id="zoom">
-          <option value="fit">Fit</option>
-          <option value="8">1×</option>
-          <option value="12">1.5×</option>
-          <option value="16" selected>2×</option>
-          <option value="24">3×</option>
-          <option value="32">4×</option>
-        </select>
-      </label>
-    </div>
+          <label>
+            Zoom
+            <select id="zoom">
+              <option value="fit">Fit</option>
+              <option value="8">1×</option>
+              <option value="12">1.5×</option>
+              <option value="16" selected>2×</option>
+              <option value="24">3×</option>
+              <option value="32">4×</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </details>
 
     <div class="tool-groups">
       <div class="tool-group">

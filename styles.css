@@ -523,6 +523,17 @@ label input {
     width: 100%;
   }
 
+  .workspace {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 16px;
+  }
+
+  .workspace > * {
+    width: 100%;
+    min-width: 0;
+  }
+
   .mobile-details {
     border: 1px solid #999999;
     background: #e5e5e5;
@@ -553,9 +564,18 @@ label input {
     margin-top: 10px;
   }
 
+  .screen-settings-details {
+    margin-bottom: 8px;
+  }
+
+  .screen-settings-details .mobile-details-content {
+    padding: 6px;
+  }
+
   .screen-nav {
     gap: 5px;
     padding: 6px;
+    margin: 0;
   }
 
   .colour-row {

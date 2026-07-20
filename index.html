@@ -46,8 +46,13 @@
       <div>
         <h2>Edit selected UDG</h2>
         <div id="selectedLabel" class="selected-label">UDG 1</div>
+        <div class="touch-udg-tools" aria-label="Touch drawing tool">
+          <button id="touchDraw" type="button" class="active">Draw</button>
+          <button id="touchErase" type="button">Erase</button>
+        </div>
         <div id="editor"></div>
-        <p class="help">Left-drag paints. Right-drag erases.</p>
+        <p class="help desktop-drawing-help">Left-drag paints. Right-drag erases.</p>
+        <p class="help touch-drawing-help">Choose Draw or Erase, then tap or drag over pixels.</p>
       </div>
 
       <div class="controls">
@@ -63,40 +68,48 @@
             </div>
           </div>
 
-          <div class="tool-group">
-            <strong>Mirror and Rotate</strong>
-            <div class="button-row">
-              <button id="mirrorHorizontal" type="button">Mirror Left ↔ Right</button>
-              <button id="mirrorVertical" type="button">Mirror Up ↕ Down</button>
-              <button id="rotateLeft" type="button">Rotate Left</button>
-              <button id="rotateRight" type="button">Rotate Right</button>
-            </div>
-          </div>
+          <details class="mobile-details" open>
+            <summary>More UDG Tools</summary>
+            <div class="mobile-details-content">
+              <div class="tool-group">
+                <strong>Mirror and Rotate</strong>
+                <div class="button-row">
+                  <button id="mirrorHorizontal" type="button">Mirror Left ↔ Right</button>
+                  <button id="mirrorVertical" type="button">Mirror Up ↕ Down</button>
+                  <button id="rotateLeft" type="button">Rotate Left</button>
+                  <button id="rotateRight" type="button">Rotate Right</button>
+                </div>
+              </div>
 
-          <div class="tool-group">
-            <strong>Shift One Pixel</strong>
-            <div class="button-row">
-              <button id="shiftUp" type="button">↑ Up</button>
-              <button id="shiftDown" type="button">↓ Down</button>
-              <button id="shiftLeft" type="button">← Left</button>
-              <button id="shiftRight" type="button">→ Right</button>
+              <div class="tool-group">
+                <strong>Shift One Pixel</strong>
+                <div class="button-row">
+                  <button id="shiftUp" type="button">↑ Up</button>
+                  <button id="shiftDown" type="button">↓ Down</button>
+                  <button id="shiftLeft" type="button">← Left</button>
+                  <button id="shiftRight" type="button">→ Right</button>
+                </div>
+              </div>
             </div>
-          </div>
+          </details>
         </div>
 
-        <h2>BASIC Export</h2>
+        <div id="status" class="status" aria-live="polite"></div>
 
-        <label class="check-row">
-          <input id="includePoke" type="checkbox" checked>
-          Include POKE loader in BASIC listing
-        </label>
+        <details class="mobile-details basic-export-details" open>
+          <summary>BASIC Export</summary>
+          <div class="mobile-details-content">
+            <h2>BASIC Export</h2>
+
+            <label class="check-row">
+              <input id="includePoke" type="checkbox" checked>
+              Include POKE loader in BASIC listing
+            </label>
 
         <div class="button-row">
           <button id="copyData" type="button">Copy Selected DATA</button>
           <button id="copyAllData" type="button">Copy BASIC Listing</button>
         </div>
-
-        <div id="status" class="status" aria-live="polite"></div>
 
         <h2>Selected UDG</h2>
         <textarea id="dataOutput" readonly></textarea>
@@ -104,10 +117,12 @@
           <h2>Current Bank / BASIC Listing</h2>
         <textarea id="allDataOutput" readonly></textarea>
 
-        <p class="help">
-          UDGs are mapped to GRAPHICS-mode keys A–U. On 128K BASIC, T and U
-          are normally occupied by SPECTRUM and PLAY.
-        </p>
+            <p class="help">
+              UDGs are mapped to GRAPHICS-mode keys A–U. On 128K BASIC, T and U
+              are normally occupied by SPECTRUM and PLAY.
+            </p>
+          </div>
+        </details>
       </div>
 
       <div class="tile-preview-column">
@@ -199,6 +214,7 @@
       <label>
         Zoom
         <select id="zoom">
+          <option value="fit">Fit</option>
           <option value="8">1×</option>
           <option value="12">1.5×</option>
           <option value="16" selected>2×</option>
@@ -213,17 +229,27 @@
         <strong>Screen Tools</strong>
         <div class="button-row">
           <button id="paintMode" type="button" class="active">Paint</button>
-          <button id="rectangleMode" type="button">Rectangle Fill</button>
-          <button id="copyMode" type="button">Copy Region</button>
-          <button id="pasteMode" type="button">Paste Region</button>
-          <button id="stampMode" type="button">Stamp</button>
-          <button id="toggleGrid" type="button">Grid Off</button>
-          <button id="clearScreen" type="button">Clear Screen</button>
         </div>
+
+        <details class="mobile-details screen-more-tools" open>
+          <summary>More Screen Tools</summary>
+          <div class="mobile-details-content button-row">
+            <button id="rectangleMode" type="button">Rectangle Fill</button>
+            <button id="copyMode" type="button">Copy Region</button>
+            <button id="pasteMode" type="button">Paste Region</button>
+            <button id="stampMode" type="button">Stamp</button>
+            <button id="toggleGrid" type="button">Grid Off</button>
+            <button id="clearScreen" type="button">Clear Screen</button>
+          </div>
+        </details>
       </div>
     </div>
 
     <div id="modeIndicator" class="mode-indicator">Mode: Paint — left-drag paints, right-drag erases.</div>
+
+    <div class="orientation-hint" role="status">
+      Rotate your phone to landscape for a larger screen-editing area.
+    </div>
 
     <div class="screen-workspace">
       <div class="screen-wrap">

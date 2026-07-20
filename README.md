@@ -59,6 +59,8 @@ Select a bank and a letter, then draw directly on the enlarged 8×8 grid.
 - Rotate left or right.
 - Shift one pixel up, down, left, or right.
 
+On touchscreens, large Draw and Erase buttons replace the mouse-button convention. Choose a tool, then tap or drag over the grid. Mouse users retain left-drag drawing and right-drag erasing.
+
 Changes immediately update the palette, repeated tile preview, BASIC data, screen palette, and every painted instance of that UDG on the current screen.
 
 ### Repeated tile preview
@@ -97,10 +99,13 @@ Each project can contain multiple 32×24 Spectrum screens.
 - Choose a UDG from the colour preview palette beside the canvas.
 - Override the current painting foreground and background without changing the UDG's saved defaults.
 - Change zoom from 1× to 4×.
+- Use Fit zoom to size all 32 columns to the available editor width.
 - Show or hide the cell grid.
 - Clear a complete screen.
 
 The UDG chooser responds to the zoom level: it stays broad when the canvas is small and becomes progressively narrower as the canvas grows.
+
+On narrow portrait phones, the editor recommends rotating to landscape while still allowing portrait editing and horizontal scrolling. Advanced UDG tools, BASIC export, secondary screen tools, and TAP export start collapsed on small screens to reduce clutter without removing functionality.
 
 Every painted cell stores its bank, UDG letter, INK, PAPER, and BRIGHT setting. A screen can therefore use Bank 1 A beside Bank 4 A and colour the two instances differently.
 

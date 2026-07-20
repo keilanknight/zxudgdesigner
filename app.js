@@ -84,8 +84,11 @@ function currentScreen() {
 let selectedUdg = 0;
 let udgDrawing = false;
 let udgDrawValue = 1;
+let udgPointerId = null;
+let touchUdgMode = "draw";
 
 let screenDrawing = false;
+let screenPointerId = null;
 let screenDrawAction = "paint";
 let screenMode = "paint";
 let dragStart = null;
@@ -101,7 +104,10 @@ const tilePreview = document.getElementById("tilePreview");
 const udgInkSelect = document.getElementById("udgInk");
 const udgPaperSelect = document.getElementById("udgPaper");
 const udgBrightSelect = document.getElementById("udgBright");
+const touchDrawButton = document.getElementById("touchDraw");
+const touchEraseButton = document.getElementById("touchErase");
 const screen = document.getElementById("screen");
+const screenWrap = document.querySelector(".screen-wrap");
 const selectedLabel = document.getElementById("selectedLabel");
 const dataOutput = document.getElementById("dataOutput");
 const allDataOutput = document.getElementById("allDataOutput");
@@ -255,25 +261,68 @@ function buildEditor() {
       pixel.dataset.row = String(row);
       pixel.dataset.col = String(col);
 
-      pixel.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        udgDrawing = true;
-        udgDrawValue = event.button === 2 ? 0 : 1;
-        setEditorPixel(row, col, udgDrawValue);
-      });
-
-      pixel.addEventListener("pointerenter", (event) => {
-        if (udgDrawing && event.buttons !== 0) {
-          setEditorPixel(row, col, udgDrawValue);
-        }
-      });
-
       editor.appendChild(pixel);
     }
   }
 
+  editor.addEventListener("pointerdown", (event) => {
+    const pixel = event.target.closest(".editor-pixel");
+
+    if (!pixel) return;
+
+    event.preventDefault();
+    udgDrawing = true;
+    udgPointerId = event.pointerId;
+    udgDrawValue = event.pointerType === "touch" || event.pointerType === "pen"
+      ? (touchUdgMode === "draw" ? 1 : 0)
+      : (event.button === 2 ? 0 : 1);
+
+    if (editor.setPointerCapture) {
+      editor.setPointerCapture(event.pointerId);
+    }
+
+    setEditorPixel(
+      Number(pixel.dataset.row),
+      Number(pixel.dataset.col),
+      udgDrawValue
+    );
+  });
+
+  editor.addEventListener("pointermove", (event) => {
+    if (!udgDrawing || event.pointerId !== udgPointerId) return;
+    if (
+      event.pointerType !== "touch" &&
+      event.pointerType !== "pen" &&
+      event.buttons === 0
+    ) return;
+
+    const pointElement = document.elementFromPoint(event.clientX, event.clientY);
+    const pixel = pointElement
+      ? pointElement.closest(".editor-pixel")
+      : null;
+
+    if (pixel && editor.contains(pixel)) {
+      setEditorPixel(
+        Number(pixel.dataset.row),
+        Number(pixel.dataset.col),
+        udgDrawValue
+      );
+    }
+  });
+
+  const finishUdgDrawing = (event) => {
+    if (udgPointerId !== null && event.pointerId !== udgPointerId) return;
+    udgDrawing = false;
+    udgPointerId = null;
+  };
+
+  editor.addEventListener("pointerup", finishUdgDrawing);
+  editor.addEventListener("pointercancel", finishUdgDrawing);
+
   window.addEventListener("pointerup", () => {
     udgDrawing = false;
+    udgPointerId = null;
+    screenPointerId = null;
     finishScreenDrag();
   });
 }
@@ -290,21 +339,56 @@ function buildScreen() {
       canvas.dataset.row = String(row);
       canvas.dataset.col = String(col);
 
-      canvas.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        handleScreenPointerDown(row, col, event.button);
-      });
-
-      canvas.addEventListener("pointerenter", (event) => {
-        if (screenDrawing && event.buttons !== 0) {
-          handleScreenPointerMove(row, col);
-        }
-      });
-
       screen.appendChild(canvas);
       drawScreenCell(row, col);
     }
   }
+
+  screen.addEventListener("pointerdown", (event) => {
+    const cell = event.target.closest(".screen-cell");
+    if (!cell) return;
+
+    event.preventDefault();
+    screenPointerId = event.pointerId;
+
+    if (screen.setPointerCapture) {
+      screen.setPointerCapture(event.pointerId);
+    }
+
+    handleScreenPointerDown(
+      Number(cell.dataset.row),
+      Number(cell.dataset.col),
+      event.button
+    );
+  });
+
+  screen.addEventListener("pointermove", (event) => {
+    if (!screenDrawing || event.pointerId !== screenPointerId) return;
+    if (
+      event.pointerType !== "touch" &&
+      event.pointerType !== "pen" &&
+      event.buttons === 0
+    ) return;
+
+    const pointElement = document.elementFromPoint(event.clientX, event.clientY);
+    const cell = pointElement ? pointElement.closest(".screen-cell") : null;
+
+    if (cell && screen.contains(cell)) {
+      handleScreenPointerMove(
+        Number(cell.dataset.row),
+        Number(cell.dataset.col)
+      );
+    }
+  });
+
+  const finishScreenPointer = (event) => {
+    if (screenPointerId !== null && event.pointerId !== screenPointerId) return;
+    screenPointerId = null;
+    finishScreenDrag();
+  };
+
+  screen.addEventListener("pointerup", finishScreenPointer);
+  screen.addEventListener("pointercancel", finishScreenPointer);
 }
 
 function handleScreenPointerDown(row, col, button) {
@@ -894,6 +978,24 @@ function applyScreenZoom(zoomValue) {
     "32": "196px"
   };
 
+  if (zoomValue === "fit") {
+    const availableWidth = screenWrap.clientWidth || window.innerWidth;
+    const fittedSize = Math.max(
+      5,
+      Math.min(32, Math.floor((availableWidth - 40) / SCREEN_COLS))
+    );
+
+    document.documentElement.style.setProperty(
+      "--screen-cell-size",
+      fittedSize + "px"
+    );
+    document.documentElement.style.setProperty(
+      "--screen-udg-picker-width",
+      pickerWidths["32"]
+    );
+    return;
+  }
+
   document.documentElement.style.setProperty("--screen-cell-size", zoomValue + "px");
   document.documentElement.style.setProperty(
     "--screen-udg-picker-width",
@@ -905,7 +1007,24 @@ document.getElementById("zoom").addEventListener("change", (event) => {
   applyScreenZoom(event.target.value);
 });
 
+window.addEventListener("resize", () => {
+  const zoomSelect = document.getElementById("zoom");
+  if (zoomSelect.value === "fit") applyScreenZoom("fit");
+});
+
 includePokeCheckbox.addEventListener("change", refreshDataOutput);
+
+function setTouchUdgMode(mode) {
+  touchUdgMode = mode;
+  touchDrawButton.classList.toggle("active", mode === "draw");
+  touchEraseButton.classList.toggle("active", mode === "erase");
+  touchDrawButton.setAttribute("aria-pressed", String(mode === "draw"));
+  touchEraseButton.setAttribute("aria-pressed", String(mode === "erase"));
+}
+
+touchDrawButton.addEventListener("click", () => setTouchUdgMode("draw"));
+touchEraseButton.addEventListener("click", () => setTouchUdgMode("erase"));
+
 udgInkSelect.addEventListener("change", () => {
   udgColours[selectedUdg].ink = udgInkSelect.value;
   refreshTilePreview();
@@ -1261,7 +1380,7 @@ function loadProjectData(project) {
 
   brightSelect.value = settings.bright !== false ? "on" : "off";
 
-  const zoomValue = ["8", "12", "16", "24", "32"].includes(String(settings.zoom))
+  const zoomValue = ["fit", "8", "12", "16", "24", "32"].includes(String(settings.zoom))
     ? String(settings.zoom)
     : "16";
 
@@ -1943,26 +2062,55 @@ function exportTapFile() {
   }
 }
 
+function setPanelCollapsed(panel, isCollapsed) {
+  const button = panel.querySelector(".panel-toggle");
+  const content = panel.querySelector(".panel-content");
+  const panelName = panel.dataset.panelName || "Panel";
+
+  panel.classList.toggle("collapsed", isCollapsed);
+  content.hidden = isCollapsed;
+  button.textContent = isCollapsed ? "+" : "−";
+  button.setAttribute("aria-expanded", String(!isCollapsed));
+  button.title = isCollapsed
+    ? "Expand " + panelName
+    : "Collapse " + panelName;
+}
+
 function buildCollapsiblePanels() {
   document.querySelectorAll(".collapsible-panel").forEach((panel) => {
     const button = panel.querySelector(".panel-toggle");
-    const content = panel.querySelector(".panel-content");
-    const panelName = panel.dataset.panelName || "Panel";
 
     button.addEventListener("click", () => {
-      const isCollapsed = panel.classList.toggle("collapsed");
-
-      content.hidden = isCollapsed;
-      button.textContent = isCollapsed ? "+" : "−";
-      button.setAttribute("aria-expanded", String(!isCollapsed));
-      button.title = isCollapsed
-        ? "Expand " + panelName
-        : "Collapse " + panelName;
+      setPanelCollapsed(panel, !panel.classList.contains("collapsed"));
     });
   });
 }
 
+let compactUiState = null;
+
+function configureResponsiveUi() {
+  const hasTouch = navigator.maxTouchPoints > 0 ||
+    window.matchMedia("(pointer: coarse)").matches;
+  const isCompact = window.matchMedia("(max-width: 760px)").matches;
+
+  document.body.classList.toggle("touch-ui", hasTouch);
+
+  if (compactUiState === isCompact) return;
+  compactUiState = isCompact;
+
+  document.querySelectorAll(".mobile-details").forEach((details) => {
+    details.open = !isCompact;
+  });
+
+  if (isCompact) {
+    const tapPanel = document.querySelector('[data-panel-name="TAP Export"]');
+    if (tapPanel) setPanelCollapsed(tapPanel, true);
+  }
+}
+
 buildCollapsiblePanels();
+configureResponsiveUi();
+window.addEventListener("resize", configureResponsiveUi);
 buildColourSelectors();
 buildBankTabs(editorBankTabs, false);
 buildBankTabs(screenBankTabs, true);
@@ -1970,6 +2118,7 @@ buildUdgList();
 buildScreenUdgList();
 buildEditor();
 buildScreen();
+setTouchUdgMode("draw");
 refreshAll();
 refreshScreenControls();
 refreshTapInstructions();

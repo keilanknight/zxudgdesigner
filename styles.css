@@ -215,19 +215,8 @@ h2 {
   background: black;
 }
 
-.touch-udg-tools,
 .touch-drawing-help {
   display: none;
-}
-
-.touch-udg-tools {
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.touch-udg-tools button {
-  min-width: 96px;
-  min-height: 44px;
 }
 
 .controls {
@@ -612,10 +601,6 @@ label input {
     width: 31px;
     height: 31px;
   }
-}
-
-.touch-ui .touch-udg-tools {
-  display: flex;
 }
 
 .touch-ui .touch-drawing-help {

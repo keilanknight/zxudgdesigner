@@ -85,7 +85,6 @@ let selectedUdg = 0;
 let udgDrawing = false;
 let udgDrawValue = 1;
 let udgPointerId = null;
-let touchUdgMode = "draw";
 
 let screenDrawing = false;
 let screenPointerId = null;
@@ -104,8 +103,6 @@ const tilePreview = document.getElementById("tilePreview");
 const udgInkSelect = document.getElementById("udgInk");
 const udgPaperSelect = document.getElementById("udgPaper");
 const udgBrightSelect = document.getElementById("udgBright");
-const touchDrawButton = document.getElementById("touchDraw");
-const touchEraseButton = document.getElementById("touchErase");
 const screen = document.getElementById("screen");
 const screenWrap = document.querySelector(".screen-wrap");
 const selectedLabel = document.getElementById("selectedLabel");
@@ -274,7 +271,7 @@ function buildEditor() {
     udgDrawing = true;
     udgPointerId = event.pointerId;
     udgDrawValue = event.pointerType === "touch" || event.pointerType === "pen"
-      ? (touchUdgMode === "draw" ? 1 : 0)
+      ? (udgs[selectedUdg][Number(pixel.dataset.row)][Number(pixel.dataset.col)] ? 0 : 1)
       : (event.button === 2 ? 0 : 1);
 
     if (editor.setPointerCapture) {
@@ -358,7 +355,8 @@ function buildScreen() {
     handleScreenPointerDown(
       Number(cell.dataset.row),
       Number(cell.dataset.col),
-      event.button
+      event.button,
+      event.pointerType === "touch" || event.pointerType === "pen"
     );
   });
 
@@ -391,19 +389,23 @@ function buildScreen() {
   screen.addEventListener("pointercancel", finishScreenPointer);
 }
 
-function handleScreenPointerDown(row, col, button) {
+function handleScreenPointerDown(row, col, button, isTouchPointer) {
   const rightClick = button === 2;
 
   if (screenMode === "paint") {
     screenDrawing = true;
-    screenDrawAction = rightClick ? "erase" : "paint";
+    screenDrawAction = isTouchPointer
+      ? (currentScreen()[row][col] ? "erase" : "paint")
+      : (rightClick ? "erase" : "paint");
     applyScreenAction(row, col, screenDrawAction);
     return;
   }
 
   if (screenMode === "stamp") {
     screenDrawing = true;
-    screenDrawAction = rightClick ? "erase" : "stamp";
+    screenDrawAction = isTouchPointer
+      ? (currentScreen()[row][col] ? "erase" : "stamp")
+      : (rightClick ? "erase" : "stamp");
     applyScreenAction(row, col, screenDrawAction);
     return;
   }
@@ -1013,17 +1015,6 @@ window.addEventListener("resize", () => {
 });
 
 includePokeCheckbox.addEventListener("change", refreshDataOutput);
-
-function setTouchUdgMode(mode) {
-  touchUdgMode = mode;
-  touchDrawButton.classList.toggle("active", mode === "draw");
-  touchEraseButton.classList.toggle("active", mode === "erase");
-  touchDrawButton.setAttribute("aria-pressed", String(mode === "draw"));
-  touchEraseButton.setAttribute("aria-pressed", String(mode === "erase"));
-}
-
-touchDrawButton.addEventListener("click", () => setTouchUdgMode("draw"));
-touchEraseButton.addEventListener("click", () => setTouchUdgMode("erase"));
 
 udgInkSelect.addEventListener("change", () => {
   udgColours[selectedUdg].ink = udgInkSelect.value;
@@ -2118,7 +2109,6 @@ buildUdgList();
 buildScreenUdgList();
 buildEditor();
 buildScreen();
-setTouchUdgMode("draw");
 refreshAll();
 refreshScreenControls();
 refreshTapInstructions();

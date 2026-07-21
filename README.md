@@ -147,6 +147,8 @@ The copied region is also included in saved project data, so it is available aga
 
 ## Saving and loading projects
 
+**New Project** clears the editor and replaces the browser recovery copy with a clean blank project. If the current work has changed since the last project-file save, the editor asks for confirmation first so the action can be cancelled.
+
 **Save Project** downloads a readable JSON file containing:
 
 - All four UDG banks and their pixel data.

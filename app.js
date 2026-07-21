@@ -894,6 +894,8 @@ tapNameInput.addEventListener("input", refreshTapInstructions);
 
 document.getElementById("saveProject").addEventListener("click", saveProjectFile);
 
+document.getElementById("newProject").addEventListener("click", startNewProject);
+
 document.getElementById("loadProject").addEventListener("click", () => {
   projectFileInput.click();
 });
@@ -1367,6 +1369,57 @@ function saveProjectFile() {
   projectHasUnsavedChanges = false;
   saveRecoveryProject();
   showStatus("Project saved");
+}
+
+function startNewProject() {
+  if (
+    projectHasUnsavedChanges &&
+    !window.confirm(
+      "You have changes that have not been saved to a project file. Start a new project and discard them?"
+    )
+  ) {
+    return;
+  }
+
+  const blankBanks = Array.from(
+    { length: UDG_BANK_COUNT },
+    () => Array.from({ length: UDG_COUNT }, blankGrid)
+  );
+  const blankColourBanks = Array.from(
+    { length: UDG_BANK_COUNT },
+    () => Array.from(
+      { length: UDG_COUNT },
+      () => ({ ink: "White", paper: "Black", bright: true })
+    )
+  );
+
+  loadProjectData({
+    format: "zx-spectrum-udg-editor-project",
+    version: 5,
+    projectName: "My Spectrum Graphics",
+    selectedBank: 0,
+    selectedUdg: 0,
+    udgBanks: blankBanks,
+    udgColourBanks: blankColourBanks,
+    screens: [createBlankScreen()],
+    selectedScreen: 0,
+    settings: {
+      foreground: "White",
+      background: "Black",
+      bright: true,
+      zoom: "16",
+      gridOff: false,
+      screenMode: "paint",
+      includePoke: true
+    },
+    copiedRegion: null
+  }, {
+    dirty: false,
+    statusMessage: "New project started"
+  });
+
+  tapNameInput.value = "GRAPHICS";
+  refreshTapInstructions();
 }
 
 function validateProjectData(project) {

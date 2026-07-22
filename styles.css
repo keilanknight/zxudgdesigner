@@ -24,6 +24,27 @@ h1 {
   font-size: 24px;
 }
 
+.site-title {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.spectrum-logo {
+  flex: 0 0 auto;
+  width: 54px;
+  height: 27px;
+  margin-left: 5px;
+  transform: skew(-20deg);
+  background: linear-gradient(
+    90deg,
+    #f40000 0 25%,
+    #fff200 25% 50%,
+    #00d52b 50% 75%,
+    #00d9e8 75% 100%
+  );
+}
+
 .title-row {
   display: flex;
   align-items: center;
@@ -386,12 +407,87 @@ textarea {
   background: white;
 }
 
-.colour-row {
+.screen-colour-panels {
   display: flex;
-  gap: 18px;
-  align-items: flex-end;
+  gap: 12px;
+  align-items: stretch;
   flex-wrap: wrap;
   margin-bottom: 12px;
+}
+
+.screen-colour-panel {
+  min-width: 390px;
+  margin: 0;
+  padding: 10px 12px 12px;
+  border: 2px solid #777777;
+  background: #dddddd;
+}
+
+.screen-colour-panel legend {
+  padding: 0 7px;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+}
+
+.screen-colour-fields {
+  display: flex;
+  gap: 10px;
+}
+
+.screen-colour-fields label {
+  flex: 1 1 100px;
+}
+
+.screen-colour-fields select {
+  width: 100%;
+  min-width: 100px;
+}
+
+.current-tile-panel {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.current-tile-panel .screen-colour-fields {
+  flex: 1 1 340px;
+}
+
+.lock-colours-control {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 2px solid #555555;
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.lock-colours-control:has(input:checked) {
+  border-color: #8a6500;
+  background: #fff1b8;
+}
+
+.lock-colours-control input {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  margin: 0;
+  accent-color: #222222;
+}
+
+.zoom-control {
+  align-self: flex-end;
+  min-width: 120px;
+}
+
+.zoom-control select {
+  width: 100%;
 }
 
 label {
@@ -479,10 +575,35 @@ label input {
 }
 
 .site-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex-wrap: wrap;
   padding: 2px 0 8px;
   color: #555555;
   font-size: 12px;
   text-align: center;
+}
+
+.site-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #333333;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.site-footer a:hover,
+.site-footer a:focus-visible {
+  text-decoration: underline;
+}
+
+.github-icon {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
 }
 
 .tap-download-row {
@@ -496,6 +617,16 @@ label input {
 
   h1 {
     font-size: 20px;
+  }
+
+  .site-title {
+    gap: 10px;
+  }
+
+  .spectrum-logo {
+    width: 42px;
+    height: 21px;
+    margin-left: 4px;
   }
 
   .panel {
@@ -579,15 +710,34 @@ label input {
     margin: 0;
   }
 
-  .colour-row {
-    gap: 8px;
+  .screen-colour-panels {
+    display: grid;
+    gap: 10px;
   }
 
-  .colour-row label {
-    flex: 1 1 120px;
+  .screen-colour-panel {
+    min-width: 0;
+    width: 100%;
   }
 
-  .colour-row select {
+  .screen-colour-fields {
+    gap: 7px;
+  }
+
+  .screen-colour-fields label {
+    min-width: 0;
+  }
+
+  .screen-colour-fields select {
+    min-width: 0;
+  }
+
+  .lock-colours-control {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .zoom-control {
     width: 100%;
   }
 

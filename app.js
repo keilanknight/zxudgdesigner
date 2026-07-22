@@ -116,6 +116,7 @@ const allDataOutput = document.getElementById("allDataOutput");
 const foregroundSelect = document.getElementById("foreground");
 const backgroundSelect = document.getElementById("background");
 const brightSelect = document.getElementById("bright");
+const lockPaintColoursCheckbox = document.getElementById("lockPaintColours");
 const status = document.getElementById("status");
 const modeIndicator = document.getElementById("modeIndicator");
 const projectNameInput = document.getElementById("projectName");
@@ -208,12 +209,20 @@ function buildColourSelectors() {
   brightSelect.value = "on";
 }
 
-function selectUdgForScreen(index) {
-  selectedUdg = index;
-  currentScreenObject().activeBank = selectedBank;
+function applySelectedUdgColours(index = selectedUdg) {
   foregroundSelect.value = udgColours[index].ink;
   backgroundSelect.value = udgColours[index].paper;
   brightSelect.value = udgColours[index].bright ? "on" : "off";
+}
+
+function selectUdgForScreen(index) {
+  selectedUdg = index;
+  currentScreenObject().activeBank = selectedBank;
+
+  if (!lockPaintColoursCheckbox.checked) {
+    applySelectedUdgColours(index);
+  }
+
   refreshAll();
 }
 
@@ -224,9 +233,10 @@ function selectBank(index, useForScreen = false) {
 
   if (useForScreen) {
     currentScreenObject().activeBank = selectedBank;
-    foregroundSelect.value = udgColours[selectedUdg].ink;
-    backgroundSelect.value = udgColours[selectedUdg].paper;
-    brightSelect.value = udgColours[selectedUdg].bright ? "on" : "off";
+
+    if (!lockPaintColoursCheckbox.checked) {
+      applySelectedUdgColours();
+    }
   }
 
   refreshAll();
@@ -1080,6 +1090,10 @@ projectNameInput.addEventListener("input", markProjectChanged);
 foregroundSelect.addEventListener("change", markProjectChanged);
 backgroundSelect.addEventListener("change", markProjectChanged);
 brightSelect.addEventListener("change", markProjectChanged);
+lockPaintColoursCheckbox.addEventListener("change", () => {
+  if (!lockPaintColoursCheckbox.checked) applySelectedUdgColours();
+  markProjectChanged();
+});
 
 udgInkSelect.addEventListener("change", () => {
   udgColours[selectedUdg].ink = udgInkSelect.value;
@@ -1292,6 +1306,7 @@ function getProjectData() {
       foreground: foregroundSelect.value,
       background: backgroundSelect.value,
       bright: brightSelect.value === "on",
+      lockPaintColours: lockPaintColoursCheckbox.checked,
       zoom: document.getElementById("zoom").value,
       gridOff: screen.classList.contains("grid-off"),
       screenMode,
@@ -1407,6 +1422,7 @@ function startNewProject() {
       foreground: "White",
       background: "Black",
       bright: true,
+      lockPaintColours: false,
       zoom: "16",
       gridOff: false,
       screenMode: "paint",
@@ -1595,6 +1611,7 @@ function loadProjectData(project, options = {}) {
     : "Black";
 
   brightSelect.value = settings.bright !== false ? "on" : "off";
+  lockPaintColoursCheckbox.checked = settings.lockPaintColours === true;
 
   const zoomValue = ["fit", "8", "12", "16", "24", "32"].includes(String(settings.zoom))
     ? String(settings.zoom)

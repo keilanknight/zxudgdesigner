@@ -131,6 +131,12 @@ const redoScreenButton = document.getElementById("redoScreen");
 const tapNameInput = document.getElementById("tapName");
 const tapStatus = document.getElementById("tapStatus");
 const tapInstructions = document.getElementById("tapInstructions");
+const openHelpButton = document.getElementById("openHelp");
+const helpOverlay = document.getElementById("helpOverlay");
+const closeHelpButton = document.getElementById("closeHelp");
+const closeHelpBottomButton = document.getElementById("closeHelpBottom");
+const helpDialogBody = helpOverlay.querySelector(".help-dialog-body");
+let helpPreviousFocus = null;
 
 function blankGrid() {
   return Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
@@ -2346,6 +2352,58 @@ function configureResponsiveUi() {
     if (tapPanel) setPanelCollapsed(tapPanel, true);
   }
 }
+
+function openHelp() {
+  helpPreviousFocus = document.activeElement;
+  helpOverlay.hidden = false;
+  document.body.classList.add("help-open");
+  helpDialogBody.scrollTop = 0;
+  closeHelpButton.focus();
+}
+
+function closeHelp() {
+  if (helpOverlay.hidden) return;
+  helpOverlay.hidden = true;
+  document.body.classList.remove("help-open");
+
+  if (helpPreviousFocus instanceof HTMLElement) {
+    helpPreviousFocus.focus();
+  }
+}
+
+openHelpButton.addEventListener("click", openHelp);
+closeHelpButton.addEventListener("click", closeHelp);
+closeHelpBottomButton.addEventListener("click", closeHelp);
+
+helpOverlay.addEventListener("click", (event) => {
+  if (event.target === helpOverlay) closeHelp();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (helpOverlay.hidden) return;
+
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeHelp();
+    return;
+  }
+
+  if (event.key !== "Tab") return;
+
+  const focusable = Array.from(
+    helpOverlay.querySelectorAll("a[href], button:not([disabled])")
+  );
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+});
 
 buildCollapsiblePanels();
 configureResponsiveUi();

@@ -59,7 +59,7 @@ Select a bank and a letter, then draw directly on the enlarged 8×8 grid.
 - Rotate left or right.
 - Shift one pixel up, down, left, or right.
 
-On touchscreens, large Draw and Erase buttons replace the mouse-button convention. Choose a tool, then tap or drag over the grid. Mouse users retain left-drag drawing and right-drag erasing.
+On touchscreens, tap an empty pixel to add it and tap a filled pixel to remove it. Mouse users retain left-drag drawing and right-drag erasing.
 
 Changes immediately update the palette, repeated tile preview, BASIC data, screen palette, and every painted instance of that UDG on the current screen.
 
@@ -99,6 +99,7 @@ Each project can contain multiple 32×24 Spectrum screens.
 - Give each screen its own default INK, PAPER, and BRIGHT setting.
 - Choose a UDG from the colour preview palette beside the canvas.
 - Override the current painting foreground and background without changing the UDG's saved defaults.
+- Lock the current painting colours while switching UDGs or banks, then unlock to restore the selected UDG's saved colours.
 - Change zoom from 1× to 4×.
 - Use Fit zoom to size all 32 columns to the available editor width.
 - Show or hide the cell grid.
@@ -121,6 +122,10 @@ The designer includes five placement modes:
 - **Stamp:** repeatedly place the selected UDG without removing surrounding cells; right-drag still erases.
 
 The copied region is also included in saved project data, so it is available again after reloading a project.
+
+## In-app help
+
+The circle-question button opens a complete guide without leaving the editor. It covers the first-project workflow, UDGs and banks, Spectrum colours, screen tools, keyboard and touch controls, project recovery, BASIC data and using exported TAP screens from a BASIC program. The guide is responsive, keyboard accessible and can be closed with its buttons, the backdrop or `Escape`.
 
 ## Suggested workflow
 

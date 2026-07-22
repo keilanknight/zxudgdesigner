@@ -112,6 +112,22 @@ h1 {
   margin: 0;
 }
 
+.basic-line-settings {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+
+.basic-line-settings label {
+  flex: 0 1 130px;
+}
+
+.basic-line-settings input {
+  width: 100%;
+  min-width: 0;
+}
+
 .screen-nav {
   display: flex;
   align-items: center;

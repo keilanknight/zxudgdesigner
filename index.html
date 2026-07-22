@@ -118,6 +118,17 @@
               Include POKE loader in BASIC listing
             </label>
 
+            <div class="basic-line-settings">
+              <label>
+                Start line
+                <input id="basicStartLine" type="number" min="1" max="9999" step="1" value="1000">
+              </label>
+              <label>
+                Increment
+                <input id="basicLineIncrement" type="number" min="1" max="9999" step="1" value="10">
+              </label>
+            </div>
+
         <div class="button-row">
           <button id="copyData" type="button">Copy Selected DATA</button>
           <button id="copyAllData" type="button">Copy BASIC Listing</button>
@@ -522,16 +533,20 @@
           <p>
             BASIC Export continuously shows the eight decimal bytes for the selected
             UDG and can produce a listing for the current bank. Copy the selected DATA
-            line for one graphic, or copy the full listing when you want the whole bank.
+            line for one graphic, or copy the full listing when you want the used part
+            of the bank. Choose the first DATA line number and the increment to match
+            your own program.
           </p>
           <pre><code>FOR n=0 TO 167
 READ a: POKE USR "A"+n,a
 NEXT n</code></pre>
           <p>
             The optional POKE loader uses the classic Spectrum arrangement beginning at
-            <code>USR "A"</code>. If you already have your own loader, untick it and use
-            the DATA alone. In 128 BASIC, UDG positions T and U overlap the SPECTRUM and
-            PLAY tokens, so test programs using those letters in the intended BASIC mode.
+            <code>USR "A"</code>. Trailing empty UDG slots are omitted to save memory,
+            while blank slots between used UDGs are kept so later letters still land in
+            the correct place. If you already have your own loader, untick it and use the
+            DATA alone. In 128 BASIC, UDG positions T and U overlap the SPECTRUM and PLAY
+            tokens, so test programs using those letters in the intended BASIC mode.
           </p>
         </section>
 

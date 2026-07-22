@@ -78,7 +78,9 @@ These colours are saved as part of the UDG design. They are defaults and do not 
 
 ### BASIC data export
 
-The editor continuously calculates the eight decimal bytes representing the selected UDG. It can also generate a complete BASIC listing for the current bank.
+The editor continuously calculates the eight decimal bytes representing the selected UDG. It can also generate a BASIC listing for the used portion of the current bank. Set the starting DATA line and line-number increment to fit the listing around your own program.
+
+Trailing blank UDG slots are omitted to save BASIC memory. Intentional blank slots between used graphics remain as zero DATA so later UDG letters are still loaded into the correct positions. The generated listing contains no per-letter REM lines.
 
 The optional loader uses the traditional pattern:
 

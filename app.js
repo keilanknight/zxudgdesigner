@@ -122,6 +122,8 @@ const modeIndicator = document.getElementById("modeIndicator");
 const projectNameInput = document.getElementById("projectName");
 const projectFileInput = document.getElementById("projectFile");
 const includePokeCheckbox = document.getElementById("includePoke");
+const basicStartLineInput = document.getElementById("basicStartLine");
+const basicLineIncrementInput = document.getElementById("basicLineIncrement");
 const defaultInkSelect = document.getElementById("defaultInk");
 const defaultPaperSelect = document.getElementById("defaultPaper");
 const defaultBrightSelect = document.getElementById("defaultBright");
@@ -788,30 +790,48 @@ function getUdgBytes(index) {
   return getGridBytes(udgs[index]);
 }
 
-function refreshDataOutput() {
-  const key = String.fromCharCode(65 + selectedUdg);
-  dataOutput.value =
-    "REM BANK " + (selectedBank + 1) + " UDG " + key + "\n" +
-    "DATA " + getUdgBytes(selectedUdg).join(",");
+function getBasicLineSetting(input, fallback) {
+  const value = Number.parseInt(input.value, 10);
+  return Number.isInteger(value) && value > 0 ? Math.min(9999, value) : fallback;
+}
 
-  const dataLines = udgs.map((_, index) =>
-    (1000 + index * 10) +
-    " REM UDG " + String.fromCharCode(65 + index) + "\n" +
-    (1005 + index * 10) +
-    " DATA " + getUdgBytes(index).join(",")
-  );
-
-  if (includePokeCheckbox.checked) {
-    allDataOutput.value =
-      "10 REM LOAD BANK " + (selectedBank + 1) + " - 21 UDGs A TO U\n" +
-      "20 FOR n=0 TO 167\n" +
-      "30 READ a: POKE USR \"A\"+n,a\n" +
-      "40 NEXT n\n" +
-      "50 REM UDGs READY\n" +
-      dataLines.join("\n");
-  } else {
-    allDataOutput.value = dataLines.join("\n");
+function getLastUsedUdgIndex() {
+  for (let index = UDG_COUNT - 1; index >= 0; index--) {
+    if (getUdgBytes(index).some((value) => value !== 0)) return index;
   }
+
+  return -1;
+}
+
+function refreshDataOutput() {
+  const startLine = getBasicLineSetting(basicStartLineInput, 1000);
+  const increment = getBasicLineSetting(basicLineIncrementInput, 10);
+  dataOutput.value =
+    startLine + " DATA " + getUdgBytes(selectedUdg).join(",");
+
+  const lastUsedIndex = getLastUsedUdgIndex();
+  const listingLines = [];
+
+  if (includePokeCheckbox.checked && lastUsedIndex >= 0) {
+    const finalByteOffset = ((lastUsedIndex + 1) * GRID_SIZE) - 1;
+    listingLines.push(
+      startLine + " FOR n=0 TO " + finalByteOffset,
+      (startLine + increment) + " READ a: POKE USR \"A\"+n,a",
+      (startLine + (increment * 2)) + " NEXT n"
+    );
+  }
+
+  const dataStartLine = startLine +
+    (includePokeCheckbox.checked && lastUsedIndex >= 0 ? increment * 3 : 0);
+
+  for (let index = 0; index <= lastUsedIndex; index++) {
+    listingLines.push(
+      (dataStartLine + (index * increment)) +
+      " DATA " + getUdgBytes(index).join(",")
+    );
+  }
+
+  allDataOutput.value = listingLines.join("\n");
 }
 
 function drawScreenCell(row, col) {
@@ -1092,6 +1112,13 @@ includePokeCheckbox.addEventListener("change", () => {
   markProjectChanged();
 });
 
+[basicStartLineInput, basicLineIncrementInput].forEach((input) => {
+  input.addEventListener("input", () => {
+    refreshDataOutput();
+    markProjectChanged();
+  });
+});
+
 projectNameInput.addEventListener("input", markProjectChanged);
 foregroundSelect.addEventListener("change", markProjectChanged);
 backgroundSelect.addEventListener("change", markProjectChanged);
@@ -1316,7 +1343,9 @@ function getProjectData() {
       zoom: document.getElementById("zoom").value,
       gridOff: screen.classList.contains("grid-off"),
       screenMode,
-      includePoke: includePokeCheckbox.checked
+      includePoke: includePokeCheckbox.checked,
+      basicStartLine: getBasicLineSetting(basicStartLineInput, 1000),
+      basicLineIncrement: getBasicLineSetting(basicLineIncrementInput, 10)
     },
     copiedRegion: copiedRegion
       ? copiedRegion.map((row) => row.map((cell) => cloneCell(cell)))
@@ -1432,7 +1461,9 @@ function startNewProject() {
       zoom: "16",
       gridOff: false,
       screenMode: "paint",
-      includePoke: true
+      includePoke: true,
+      basicStartLine: 1000,
+      basicLineIncrement: 10
     },
     copiedRegion: null
   }, {
@@ -1631,6 +1662,14 @@ function loadProjectData(project, options = {}) {
     settings.gridOff ? "Grid On" : "Grid Off";
 
   includePokeCheckbox.checked = settings.includePoke !== false;
+  basicStartLineInput.value = getBasicLineSetting(
+    { value: settings.basicStartLine },
+    1000
+  );
+  basicLineIncrementInput.value = getBasicLineSetting(
+    { value: settings.basicLineIncrement },
+    10
+  );
 
   const validModes = ["paint", "rectangle", "copy", "paste", "stamp"];
   setScreenMode(validModes.includes(settings.screenMode) ? settings.screenMode : "paint");
@@ -2253,13 +2292,13 @@ function buildTapFile() {
 
 function refreshTapInstructions() {
   tapInstructions.value =
-    "The exported TAP auto-loads and draws screen 1.\\n\\n" +
-    "To draw another screen from your own BASIC:\\n\\n" +
-    "LET s=2\\n" +
-    "POKE " + TAP_CONTROL_ADDRESS + ",s-1\\n" +
-    "RANDOMIZE USR " + TAP_RENDERER_ADDRESS + "\\n\\n" +
-    "Package load address: " + TAP_LOAD_ADDRESS + "\\n" +
-    "Required CLEAR: " + (TAP_LOAD_ADDRESS - 1) + "\\n" +
+    "The exported TAP auto-loads and draws screen 1.\n\n" +
+    "To draw another screen from your own BASIC:\n\n" +
+    "LET s=2\n" +
+    "POKE " + TAP_CONTROL_ADDRESS + ",s-1\n" +
+    "RANDOMIZE USR " + TAP_RENDERER_ADDRESS + "\n\n" +
+    "Package load address: " + TAP_LOAD_ADDRESS + "\n" +
+    "Required CLEAR: " + (TAP_LOAD_ADDRESS - 1) + "\n" +
     "Renderer entry: " + TAP_RENDERER_ADDRESS;
 }
 

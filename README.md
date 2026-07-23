@@ -131,7 +131,7 @@ The copied region is also included in saved project data, so it is available aga
 
 ## In-app help
 
-The circle-question button opens a complete guide without leaving the editor. It covers the first-project workflow, UDGs and banks, Spectrum colours, screen tools, keyboard and touch controls, project recovery, BASIC data and using exported TAP screens from a BASIC program. The guide is responsive, keyboard accessible and can be closed with its buttons, the backdrop or `Escape`.
+The circle-question button opens a complete guide without leaving the editor. It covers the first-project workflow, UDGs and banks, Spectrum colours, screen tools, keyboard and touch controls, project recovery, BASIC data, exported TAP screens, cloud projects, public links, and QAOP testing. The guide is responsive, keyboard accessible and can be closed with its buttons, the backdrop or `Escape`.
 
 ## Suggested workflow
 
@@ -258,6 +258,35 @@ Cloud Projects are developed separately on the `feature/cloud-projects-beta`
 branch. The beta adds private server saves, Google sign-in, explicitly published
 project and TAP links, and an administrator view for managing users and projects.
 
+Cloud support is optional. Local browser recovery, downloaded JSON projects, and
+ordinary TAP downloads continue to work without an account.
+
+### Using Cloud Projects
+
+1. Open **Cloud Projects** and sign in with Google.
+2. Name the cloud copy and choose **Save as New**.
+3. Open a cloud project and use **Update Current** or **Save** to update that copy.
+4. Choose **Publish TAP** only when the project is ready to share.
+
+Private projects are visible only to their owner and the site administrator.
+Publishing creates two deliberately different links:
+
+- **Copy Project Link** copies a public, read-only project page. A visitor may
+  open that project in the editor, but cannot overwrite the owner's copy.
+- **Copy TAP Link** copies the direct public `.tap` URL for emulators and other
+  tools.
+
+Published projects also provide **Download TAP** and **Try in QAOP**. The QAOP
+link passes the direct TAP URL to the QAOP JavaScript Spectrum emulator.
+**Update TAP** rebuilds an existing publication, while **Unpublish** removes its
+public project and TAP links without deleting the private save.
+
+The administrator view lists users, project counts, storage use, and recent
+projects. Administrators can disable or re-enable users and delete projects.
+Disabling a user also makes that user's published links unavailable.
+
+### Server implementation
+
 The browser sends the same project structure used by the downloaded JSON file.
 PHP validates it, stores compressed project data outside the public web
 directory, and keeps metadata in SQLite. Published TAP files are also stored
@@ -266,7 +295,7 @@ privately and served through a controlled public endpoint.
 To build the beta:
 
 ```sh
-./build.sh 2.0.0-beta.1
+./build.sh 2.0.0-beta.3
 ```
 
 The build copies the PHP API into `dist/api` and adds the rewrite rule used for
@@ -286,7 +315,8 @@ picture are stored for account display and administration.
 
 ## Release
 
-The current release is `v1.0.0`.
+The stable production release is `v1.7.0`. Cloud work is currently available as
+the `v2.0.0-beta` series on `feature/cloud-projects-beta`.
 
 The ready-to-deploy version is in `dist/`. The unminified source files remain the best place to study, modify, or contribute to the editor.
 

@@ -381,6 +381,12 @@ The BASIC preview provides:
 - Real tokenised program TAP export with a selectable autostart line.
 - Plain-text `.bas` listing import and export. Import is allowed only when the
   editor is empty, preventing an existing listing from being overwritten.
+- Transactional whole-program and range renumbering. The editor rejects
+  collisions with untouched lines before changing the source and updates
+  literal `GO TO`, `GO SUB`, `RESTORE`, `RUN`, and `LIST` targets.
+- A live variable explorer with syntax-aware renaming. It distinguishes
+  numeric, string, array, and `FOR`/`NEXT` control variables, enforces Spectrum
+  naming rules, and never replaces names inside strings or `REM` comments.
 - JSON project download/upload and private Google-authenticated cloud saves.
 - Published project and direct TAP links, plus one-click testing in QAOP.
 

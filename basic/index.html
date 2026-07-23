@@ -30,6 +30,29 @@
 </section>
 <section class="stack">
   <section class="panel collapsible-panel">
+    <div class="panel-head"><h2>Variable Explorer</h2><button class="panel-toggle" type="button" aria-expanded="true" aria-label="Collapse Variable Explorer">−</button></div>
+    <div class="panel-content variable-panel">
+      <p class="mini">Variables stay visible here as you type. Enter a new name and choose Rename.</p>
+      <div class="variable-list" id="variableList"></div>
+      <div class="tool-message" id="variableMessage" role="status" aria-live="polite"></div>
+    </div>
+  </section>
+  <section class="panel collapsible-panel collapsed">
+    <div class="panel-head"><h2>Renumber</h2><button class="panel-toggle" type="button" aria-expanded="false" aria-label="Expand Renumber">+</button></div>
+    <div class="panel-content renumber-panel">
+      <div class="formgrid">
+        <div class="field"><label for="renumberScope">Scope</label><select id="renumberScope"><option value="all">Whole program</option><option value="range">Line range</option></select></div>
+        <div class="field"><label for="renumberFirst">First new line</label><input id="renumberFirst" value="10" inputmode="numeric"></div>
+        <div class="field range-field" hidden><label for="renumberFrom">From existing line</label><input id="renumberFrom" value="10" inputmode="numeric"></div>
+        <div class="field range-field" hidden><label for="renumberTo">Through existing line</label><input id="renumberTo" value="100" inputmode="numeric"></div>
+        <div class="field"><label for="renumberStep">Increment</label><input id="renumberStep" value="10" inputmode="numeric"></div>
+      </div>
+      <button class="btn primary" id="renumberBtn" type="button">Renumber Program</button>
+      <div class="tool-message" id="renumberMessage" role="status" aria-live="polite"></div>
+      <p class="mini">Literal GO TO, GO SUB, RESTORE, RUN and LIST targets follow any lines that move. Calculated targets are left alone.</p>
+    </div>
+  </section>
+  <section class="panel collapsible-panel">
     <div class="panel-head"><h2>Validation results</h2><button class="panel-toggle" type="button" aria-expanded="true" aria-label="Collapse Validation results">−</button></div>
     <div class="panel-content">
       <div class="tabs"><button class="tab active" data-tab="problems">Problems</button><button class="tab" data-tab="tokenised">Tokenised</button><button class="tab" data-tab="keywords">Keywords</button></div>

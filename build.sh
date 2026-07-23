@@ -38,6 +38,14 @@ find dist/assembler -maxdepth 1 -type f \( \
   -name 'app-*.js' -o \
   -name 'styles-*.css' \
 \) -delete
+mkdir -p dist/basic
+cp basic/index.html dist/basic/index.html
+find dist/basic -maxdepth 1 -type f \( \
+  -name 'app.js' -o \
+  -name 'styles.css' -o \
+  -name 'app-*.js' -o \
+  -name 'styles-*.css' \
+\) -delete
 
 find dist -maxdepth 1 -type f \( \
   -name 'app.js' -o \
@@ -58,6 +66,12 @@ BUILD_VERSION="$build_version" perl -0pi -e '
   s/Version dev/Version $ENV{BUILD_VERSION}/g;
 ' dist/assembler/index.html
 
+BUILD_VERSION="$build_version" perl -0pi -e '
+  s/styles\.css\?v=dev/styles-$ENV{BUILD_VERSION}.css/g;
+  s/app\.js\?v=dev/app-$ENV{BUILD_VERSION}.js/g;
+  s/Version dev/Version $ENV{BUILD_VERSION}/g;
+' dist/basic/index.html
+
 npx --yes clean-css-cli -o "dist/styles-$build_version.css" styles.css
 npx --yes terser app.js \
   --compress passes=3,unsafe_arrows=true \
@@ -73,6 +87,15 @@ npx --yes terser assembler/app.js \
   --mangle \
   --ecma 2017 \
   --output "dist/assembler/app-$build_version.js"
+
+npx --yes clean-css-cli \
+  -o "dist/basic/styles-$build_version.css" \
+  basic/styles.css
+npx --yes terser basic/app.js \
+  --compress passes=3,unsafe_arrows=true \
+  --mangle \
+  --ecma 2017 \
+  --output "dist/basic/app-$build_version.js"
 
 printf '%s\n' "$build_version" > VERSION
 
@@ -105,6 +128,8 @@ printf '%s\n' \
   '  </Files>' \
   '  Header set X-Content-Type-Options "nosniff"' \
   '  Header set Referrer-Policy "same-origin"' \
-  '</IfModule>' > dist/assembler/.htaccess
+'</IfModule>' > dist/assembler/.htaccess
+
+cp dist/assembler/.htaccess dist/basic/.htaccess
 
 echo "Built dist version $build_version"

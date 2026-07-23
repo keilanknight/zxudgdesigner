@@ -21,6 +21,7 @@
       </div>
       <nav class="studio-navigation" aria-label="Studio tools">
         <a class="studio-nav-link current" href="./" aria-current="page">UDG Designer</a>
+        <a class="studio-nav-link" href="basic/">BASIC</a>
         <a class="studio-nav-link" href="assembler/">Assembler</a>
         <span class="studio-badge">STUDIO PREVIEW</span>
       </nav>
@@ -432,6 +433,7 @@
           <a href="#help-tools">Screen tools</a>
           <a href="#help-tap">TAP export</a>
           <a href="#help-cloud">Cloud projects</a>
+          <a href="#help-basic">BASIC preview</a>
           <a href="#help-assembler">Assembler preview</a>
           <a href="#help-tips">Ideas and tips</a>
         </nav>
@@ -714,8 +716,33 @@ RANDOMIZE USR 50016</code></pre>
           </p>
         </section>
 
+        <section id="help-basic" class="help-section">
+          <h3><span>10</span> The BASIC preview</h3>
+          <p>
+            Choose <strong>BASIC</strong> in the top toolbar for a focused Sinclair
+            BASIC workspace. Write an ordinary numbered listing, validate it, then
+            export a real tokenised program TAP—ready for a Spectrum or QAOP.
+          </p>
+          <ol class="help-steps">
+            <li>Number each program line from 1 to 9999. Gaps of ten leave room for later ideas.</li>
+            <li>Choose <strong>Validate</strong> to find malformed lines, duplicate numbers, unfinished strings, missing THENs and suspicious jump targets.</li>
+            <li>Open <strong>Spectrum BASIC help</strong> and search for a command or topic whenever memory gets hazy.</li>
+            <li>Set the TAP name and optional autostart line, then download or publish the tokenised program.</li>
+          </ol>
+          <p>
+            BASIC projects have local JSON saving, automatic browser recovery,
+            Undo/Redo and the same private cloud, sharing, direct TAP and QAOP
+            features as the other Studio tools.
+          </p>
+          <aside class="help-note">
+            Spectrum listings often represent UDG A–U as <strong>\A</strong> through
+            <strong>\U</strong>. The validator explains this convention, but direct
+            UDG characters are deliberately not converted in this first preview.
+          </aside>
+        </section>
+
         <section id="help-assembler" class="help-section">
-          <h3><span>10</span> The Assembler preview</h3>
+          <h3><span>11</span> The Assembler preview</h3>
           <p>
             Choose <strong>Assembler</strong> in the top toolbar to open the first
             ZX Spectrum Studio companion tool. It has its own uncluttered workspace,
@@ -759,7 +786,7 @@ RANDOMIZE USR 50016</code></pre>
         </section>
 
         <section id="help-tips" class="help-section">
-          <h3><span>11</span> Good things to try</h3>
+          <h3><span>12</span> Good things to try</h3>
           <ul>
             <li>Build a title screen with a tiled border, logo pieces and menu icons.</li>
             <li>Design a room in Bank 1, then use Lock colours to create ice, lava or night-time versions.</li>

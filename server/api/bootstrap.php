@@ -412,6 +412,9 @@ function project_type(array $project): string
     if ($format === 'zx-spectrum-z80-assembler-project') {
         return 'assembler';
     }
+    if ($format === 'zx-spectrum-basic-editor-project') {
+        return 'basic';
+    }
     api_error('This is not a supported ZX Spectrum Studio project.');
 }
 
@@ -420,6 +423,10 @@ function validate_project(array $project): string
     $type = project_type($project);
     if ($type === 'assembler') {
         validate_assembler_project($project);
+        return $type;
+    }
+    if ($type === 'basic') {
+        validate_basic_project($project);
         return $type;
     }
     validate_graphics_project($project);
@@ -452,6 +459,29 @@ function validate_assembler_project(array $project): void
         !in_array($project['tapMode'], ['code', 'loader'], true)
     ) {
         api_error('The assembler TAP mode is invalid.');
+    }
+}
+
+function validate_basic_project(array $project): void
+{
+    if (
+        !isset($project['source']) ||
+        !is_string($project['source']) ||
+        strlen($project['source']) > 524288
+    ) {
+        api_error('The BASIC listing is invalid or too large.');
+    }
+    if (
+        isset($project['tapName']) &&
+        (!is_string($project['tapName']) || strlen($project['tapName']) > 10)
+    ) {
+        api_error('The BASIC TAP name is invalid.');
+    }
+    if (
+        isset($project['autostartLine']) &&
+        (!is_string($project['autostartLine']) || strlen($project['autostartLine']) > 16)
+    ) {
+        api_error('The BASIC autostart line is invalid.');
     }
 }
 
@@ -613,10 +643,15 @@ function project_summary(array $record): array
 {
     $config = beta_config();
     $published = (int) $record['is_published'] === 1;
-    $type = ($record['project_type'] ?? 'graphics') === 'assembler'
-        ? 'assembler'
+    $storedType = $record['project_type'] ?? 'graphics';
+    $type = in_array($storedType, ['graphics', 'assembler', 'basic'], true)
+        ? $storedType
         : 'graphics';
-    $projectRoute = $type === 'assembler' ? '/assembler/' : '/';
+    $projectRoute = match ($type) {
+        'assembler' => '/assembler/',
+        'basic' => '/basic/',
+        default => '/',
+    };
     $tapUrl = $published
         ? $config['base_url'] . '/t/' . $record['slug'] . '.tap?v=' .
             (int) ($record['tap_revision'] ?? 0)

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZX Spectrum BASIC Editor</title>
+<link rel="stylesheet" href="styles.css?v=dev">
+</head>
+<body>
+<header>
+  <div class="header-row"><div class="title"><h1><span class="spectrum-logo" aria-hidden="true"></span>ZX Spectrum Studio</h1><p>Sinclair BASIC — write, check and build real tokenised Spectrum TAP files.</p></div><div class="header-actions"><a class="studio-link" href="../">UDG Designer</a><a class="studio-link current" href="./" aria-current="page">BASIC</a><a class="studio-link" href="../assembler/">Assembler</a><span class="badge">STUDIO PREVIEW</span></div></div>
+  <div class="project-bar">
+    <label class="project-name">Project name<input id="projectName" maxlength="80" value="My BASIC Program"></label>
+    <button class="btn" id="newProject">New Project</button>
+    <button class="btn" id="saveProject">Save Project</button>
+    <button class="btn" id="loadProject">Load Project</button>
+    <button class="btn" id="undoBtn">Undo</button>
+    <button class="btn" id="redoBtn">Redo</button>
+    <button class="btn primary" id="cloudBtn">Cloud Projects</button>
+    <input class="hidden" id="projectFile" type="file" accept=".json,application/json">
+  </div>
+</header>
+<main>
+<section class="panel">
+  <div class="panel-head"><h2>BASIC listing</h2><div class="toolbar"><button class="btn" id="exampleBtn">Example</button><button class="btn" id="clearBtn">Clear</button><button class="btn primary" id="validateBtn">Validate</button></div></div>
+  <div class="editor-wrap"><div class="lines" id="lines">1</div><textarea class="editor" id="source" spellcheck="false" aria-label="Sinclair BASIC listing"></textarea></div>
+  <div class="statusbar"><span>Program lines: <strong id="lineStat">0</strong></span><span>Tokenised size: <strong id="sizeStat">0 bytes</strong></span><span>Errors: <strong id="errorStat">0</strong></span><span>Warnings: <strong id="warningStat">0</strong></span></div>
+</section>
+<section class="stack">
+  <section class="panel collapsible-panel">
+    <div class="panel-head"><h2>Validation results</h2><button class="panel-toggle" type="button" aria-expanded="true" aria-label="Collapse Validation results">−</button></div>
+    <div class="panel-content">
+      <div class="tabs"><button class="tab active" data-tab="problems">Problems</button><button class="tab" data-tab="tokenised">Tokenised</button><button class="tab" data-tab="keywords">Keywords</button></div>
+      <div class="tabbody active" id="problems"><div class="mini">Press Validate to check the program.</div></div>
+      <div class="tabbody" id="tokenised"><pre id="tokenisedOut">No validation yet.</pre></div>
+      <div class="tabbody" id="keywords"><pre id="keywordsOut">No keywords yet.</pre></div>
+    </div>
+  </section>
+  <section class="panel collapsible-panel">
+    <div class="panel-head"><h2>Export</h2><button class="panel-toggle" type="button" aria-expanded="true" aria-label="Collapse Export">−</button></div>
+    <div class="panel-content" style="padding:14px">
+      <div class="formgrid">
+        <div class="field"><label for="tapName">TAP name</label><input id="tapName" maxlength="10" value="BASIC"></div>
+        <div class="field"><label for="autostartLine">Autostart line</label><input id="autostartLine" value="10" inputmode="numeric"></div>
+      </div>
+      <div class="export-actions"><button class="btn primary" id="tapBtn">Download TAP</button><button class="btn" id="copyBtn">Copy Listing</button></div>
+      <p class="mini">The TAP contains a genuine tokenised Spectrum BASIC program and can autostart at the selected line.</p>
+    </div>
+  </section>
+  <section class="panel collapsible-panel collapsed">
+    <div class="panel-head"><h2>Spectrum BASIC help</h2><button class="panel-toggle" type="button" aria-expanded="false" aria-label="Expand Spectrum BASIC help">+</button></div>
+    <div class="panel-content" style="padding:14px"><input class="help-search" id="helpSearch" placeholder="Search: PRINT, FOR, POKE, UDG..."><div class="help-list" id="helpList"></div></div>
+  </section>
+</section>
+</main>
+<div class="cloud-overlay" id="cloudOverlay" hidden>
+  <section class="cloud-dialog" role="dialog" aria-modal="true" aria-labelledby="cloudTitle">
+    <div class="cloud-head"><div><strong>ZX SPECTRUM STUDIO</strong><h2 id="cloudTitle">BASIC Cloud Projects</h2></div><button class="cloud-close" id="cloudClose" type="button" aria-label="Close">×</button></div>
+    <div class="cloud-body">
+      <div class="cloud-status" id="cloudStatus" role="status" aria-live="polite"></div>
+      <section class="shared-card" id="sharedCard" hidden><strong>SHARED BASIC PROJECT</strong><h3 id="sharedName"></h3><p id="sharedOwner"></p><div class="cloud-actions"><button class="btn" id="openShared">Open a Copy</button><a id="sharedTap" target="_blank" rel="noopener">Download TAP</a><a id="sharedQaop" target="_blank" rel="noopener">Try in QAOP</a></div></section>
+      <section id="signedOut"><h3>Take your BASIC programs anywhere</h3><p>Sign in to save private BASIC projects, publish runnable TAP files and share them. Google identifies your account; this site never receives your password.</p><div id="googleButton"></div></section>
+      <section id="signedIn" hidden>
+        <div class="cloud-account"><div><strong id="cloudUserName"></strong><div id="cloudUserEmail"></div></div><button class="btn" id="signOutBtn">Sign Out</button></div>
+        <div class="cloud-save"><label><strong>Cloud project name</strong><input id="cloudName" maxlength="80"></label><div class="cloud-actions"><button class="btn primary" id="saveNewCloud">Save as New</button><button class="btn" id="updateCloud" disabled>Update Current</button><button class="btn" id="refreshCloud">Refresh</button></div><span class="mini">Cloud saves are private until you publish a runnable TAP.</span></div>
+        <div class="cloud-heading"><h3>My BASIC Projects</h3></div><div class="cloud-list" id="cloudList"></div>
+      </section>
+    </div>
+  </section>
+</div>
+<script src="app.js?v=dev"></script>
+<footer class="assembler-footer">ZX Spectrum Studio BASIC Preview · <span>Version dev</span> · Created by Keilan Knight</footer>
+</body>
+</html>

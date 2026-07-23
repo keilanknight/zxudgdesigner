@@ -225,6 +225,7 @@ The exported loader reserves memory with `CLEAR 49999`, loads the package at `50
 ├── index.html       HTML structure
 ├── styles.css       Development stylesheet
 ├── app.js           Editor, persistence, export, assembler, and renderer logic
+├── basic/           Sinclair BASIC editor, validator, help, and TAP exporter
 ├── assembler/       Z80 assembler HTML, stylesheet, and application source
 ├── server/          Cloud API and private configuration template
 ├── dist/            Minified website build
@@ -362,9 +363,37 @@ The longer-term plan is to share more Spectrum TAP utilities and allow graphics
 data to be passed into assembly without coupling the two editor interfaces
 together.
 
+## Spectrum Studio BASIC preview
+
+The Studio branch also includes a separate Sinclair BASIC workspace at
+`/basic/`. Like the assembler, it has its own HTML, CSS, and JavaScript, so the
+three tools remain focused and only load the code they need.
+
+The BASIC preview provides:
+
+- A line-numbered Sinclair BASIC editor with local recovery and unsaved-change
+  protection.
+- Undo and Redo for listing edits.
+- Validation for line numbers, duplicates, unfinished strings, brackets,
+  `IF` without `THEN`, and missing literal jump targets.
+- A searchable, plain-English Spectrum BASIC help panel.
+- A token and byte view so curious users can inspect the stored program.
+- Real tokenised program TAP export with a selectable autostart line.
+- JSON project download/upload and private Google-authenticated cloud saves.
+- Published project and direct TAP links, plus one-click testing in QAOP.
+
+Graphics, BASIC, and assembler projects use separate validated project formats
+and appear only in their matching editor. Published BASIC project links route
+to `/basic/`.
+
+On a real Spectrum, UDGs A–U are entered in Graphics mode. Written listings
+often represent them as `\A` through `\U`; the BASIC editor documents and
+recognises that convention, but does not yet turn those sequences into UDG
+character bytes.
+
 ## Release
 
-The stable production release is `v1.7.0`. Cloud work is currently available as
+The stable production release is `v1.7.1`. Cloud work is currently available as
 the `v2.0.0-beta` series on `feature/cloud-projects-beta`.
 
 The ready-to-deploy version is in `dist/`. The unminified source files remain the best place to study, modify, or contribute to the editor.

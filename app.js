@@ -3067,7 +3067,11 @@ function renderAdminSummary(users, projects) {
     const meta = document.createElement("div");
     meta.className = "admin-meta";
     meta.textContent =
-      (project.type === "assembler" ? "Assembler" : "Graphics") + " · " +
+      (project.type === "assembler"
+        ? "Assembler"
+        : project.type === "basic"
+          ? "BASIC"
+          : "Graphics") + " · " +
       project.ownerName + " · " + project.ownerEmail + " · " +
       (project.published ? "Published" : "Private") + " · " +
       formatCloudBytes(project.projectBytes + project.tapBytes);

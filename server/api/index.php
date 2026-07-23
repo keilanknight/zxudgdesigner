@@ -243,8 +243,12 @@ if ($action === 'public-project') {
         'ok' => true,
         'project' => load_project_json($record),
         'meta' => [
-            'type' => ($record['project_type'] ?? 'graphics') === 'assembler'
-                ? 'assembler'
+            'type' => in_array(
+                $record['project_type'] ?? 'graphics',
+                ['graphics', 'assembler', 'basic'],
+                true
+            )
+                ? $record['project_type']
                 : 'graphics',
             'name' => $record['name'],
             'owner' => $record['owner_name'],

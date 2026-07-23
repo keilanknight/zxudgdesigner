@@ -254,7 +254,9 @@ Minification is kept lightweight so the deployed editor starts quickly. Heavy co
 
 ## Release
 
-The current release is `v1.0.0`.
+The current stable release is `v1.7.1`. Its footer links to the separate beta
+site so visitors can opt into testing upcoming cloud and Studio features without
+changing the stable editor.
 
 The ready-to-deploy version is in `dist/`. The unminified source files remain the best place to study, modify, or contribute to the editor.
 

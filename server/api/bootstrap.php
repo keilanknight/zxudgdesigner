@@ -483,6 +483,12 @@ function validate_basic_project(array $project): void
     ) {
         api_error('The BASIC autostart line is invalid.');
     }
+    if (
+        isset($project['targetModel']) &&
+        !in_array($project['targetModel'], ['auto', '48', '128'], true)
+    ) {
+        api_error('The BASIC target model is invalid.');
+    }
 }
 
 function validate_graphics_project(array $project): void

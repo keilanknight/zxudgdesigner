@@ -399,10 +399,12 @@ Graphics, BASIC, and assembler projects use separate validated project formats
 and appear only in their matching editor. Published BASIC project links route
 to `/basic/`.
 
-On a real Spectrum, UDGs A–U are entered in Graphics mode. Written listings
-often represent them as `\A` through `\U`; the BASIC editor documents and
-converts those sequences to the real Spectrum UDG character bytes 144–164
-during tokenised TAP export. JSON and BAS source retain the readable notation.
+On a real Spectrum, UDGs are entered in Graphics mode. In the BASIC editor,
+write them as `\A` onward and choose a BASIC target in the Export panel (or
+leave it on Auto). A 48K program supports UDG A–U. A 128K program supports
+A–S because `SPECTRUM` and `PLAY` use the final two token bytes. Auto selects
+128K when either command appears. JSON and BAS source retain the readable
+backslash notation.
 
 ## Release
 

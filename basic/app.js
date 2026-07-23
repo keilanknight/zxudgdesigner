@@ -20,12 +20,16 @@ const TOKEN_ENTRIES = TOKENS.map((keyword, index) => ({
   compact: keyword.replace(/\s+/g, ''),
   byte: 0xA5 + index
 })).sort((a, b) => b.compact.length - a.compact.length);
+const TOKENS_128 = [
+  {keyword: 'SPECTRUM', compact: 'SPECTRUM', byte: 0xA3},
+  {keyword: 'PLAY', compact: 'PLAY', byte: 0xA4}
+];
 const STATEMENTS = new Set([
   'BEEP','BORDER','BRIGHT','CIRCLE','CLEAR','CLS','CONTINUE','COPY','DATA',
   'DEF FN','DIM','DRAW','FOR','GO SUB','GO TO','IF','INK','INPUT','INVERSE',
   'LET','LINE','LIST','LLIST','LOAD','LPRINT','NEW','NEXT','OUT','OVER',
   'PAPER','PAUSE','PLOT','POKE','PRINT','RANDOMIZE','READ','REM','RESTORE',
-  'RETURN','RUN','SAVE','STOP','VERIFY'
+  'RETURN','RUN','SAVE','STOP','VERIFY','PLAY','SPECTRUM'
 ]);
 const HELP = {
   'Line numbers': 'Every stored program line needs a whole-number label from 1 to 9999. Leave gaps such as 10, 20, 30 so new lines can be inserted later.',
@@ -41,13 +45,13 @@ const HELP = {
   'POKE / PEEK': 'PEEK reads a memory byte and POKE writes one. Use them carefully: the Spectrum will faithfully let you poke something important!',
   'BIN': 'Write a binary number using only 0 and 1, such as BIN 11111111 for 255. TAP export stores the correct numeric value while keeping the readable binary digits in the listing.',
   'USR': 'RANDOMIZE USR address calls machine code. USR "A" gives the address of UDG A.',
-  'UDGs': 'On a Spectrum, enter Graphics mode and press A–U to type a UDG. In this editor, write \\A through \\U inside a string; TAP export converts them to the real Spectrum UDG character bytes 144–164.',
+  'UDGs': 'On a Spectrum, enter Graphics mode and press a letter to type a UDG. In this editor, use \\A onward inside a string. A 48K target supports A–U; a 128K target supports A–S because its SPECTRUM and PLAY commands use the final two token bytes.',
   'REM': 'Everything after REM is a comment. Keywords and numbers inside it are stored as ordinary characters.',
   'TAP export': 'The exported TAP contains the real tokenised BASIC program. Set Autostart line to the line that should run automatically after loading.',
   'BAS files': 'Download BAS saves the numbered listing as readable text. To protect work already in the editor, a plain-text BAS file can be imported only after you choose Clear and leave the editor empty.',
   'Renumber': 'Renumber the whole program or an inclusive range. Nothing changes if proposed lines collide with untouched lines or exceed 9999. Literal GO TO, GO SUB, RESTORE, RUN and LIST targets follow moved lines.',
   'Variable Explorer': 'Shows numeric, string, array and FOR/NEXT variables while you type. Rename changes exact code references but leaves strings and REM comments alone. String, array and loop-control names follow the Spectrum’s one-letter rules.',
-  '48K compatibility': 'This first editor targets classic 48K Sinclair BASIC. 128 BASIC adds SPECTRUM and PLAY and reduces the normally available UDG letters.'
+  '48K / 128K': 'Auto-detect uses 128K token rules when PLAY or SPECTRUM appears; otherwise it uses 48K. You can force either target in Export. 48K has UDG A–U; 128K uses the last two codes for SPECTRUM and PLAY and therefore has UDG A–S.'
 };
 const example = `10 BORDER 1: PAPER 0: INK 7: CLS
 20 LET score=0
@@ -95,6 +99,7 @@ function projectData() {
     source: source.value,
     tapName: $('#tapName').value,
     autostartLine: $('#autostartLine').value,
+    targetModel: $('#targetModel').value,
     savedAt: new Date().toISOString()
   };
 }
@@ -141,6 +146,9 @@ function loadProjectData(project, dirty = false) {
   source.value = project.source;
   $('#tapName').value = String(project.tapName || 'BASIC').slice(0, 10);
   $('#autostartLine').value = String(project.autostartLine || '10').slice(0, 4);
+  $('#targetModel').value = ['48', '128'].includes(project.targetModel)
+    ? project.targetModel
+    : 'auto';
   lastSource = source.value;
   sourceUndo = [];
   sourceRedo = [];
@@ -197,9 +205,12 @@ function isWordCharacter(character) {
   return Boolean(character && /[A-Z0-9_$]/i.test(character));
 }
 
-function matchToken(text, offset) {
+function matchToken(text, offset, model = '48') {
   const remaining = text.slice(offset).toUpperCase();
-  for (const entry of TOKEN_ENTRIES) {
+  const entries = model === '128'
+    ? [...TOKENS_128, ...TOKEN_ENTRIES]
+    : TOKEN_ENTRIES;
+  for (const entry of entries) {
     const expression = entry.compact
       .split('')
       .map(character => character.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
@@ -217,7 +228,7 @@ function matchToken(text, offset) {
   return null;
 }
 
-function tokeniseBody(body) {
+function tokeniseBody(body, model = '48') {
   const bytes = [];
   const keywords = [];
   let offset = 0;
@@ -241,12 +252,16 @@ function tokeniseBody(body) {
       character === '\\' &&
       /^[A-U]$/i.test(body[offset + 1] || '')
     ) {
-      bytes.push(0x90 + body[offset + 1].toUpperCase().charCodeAt(0) - 65);
+      const letter = body[offset + 1].toUpperCase();
+      if (model === '128' && letter > 'S') {
+        throw Error('UDG \\' + letter + ' is unavailable in 128K BASIC; use UDG A–S or choose a 48K target.');
+      }
+      bytes.push(0x90 + letter.charCodeAt(0) - 65);
       offset += 2;
       continue;
     }
     if (!quoted) {
-      const token = matchToken(body, offset);
+      const token = matchToken(body, offset, model);
       if (token) {
         if (bytes[bytes.length - 1] === 0x20) bytes.pop();
         bytes.push(token.byte);
@@ -291,11 +306,20 @@ function tokeniseBody(body) {
   return {bytes, keywords, quoted};
 }
 
+function effectiveBasicModel(text, requested = $('#targetModel')?.value || 'auto') {
+  if (requested === '48' || requested === '128') return requested;
+  return text.replace(/\r/g, '').split('\n').some(raw => {
+    const match = raw.match(/^\s*\d+\s+(.*)$/);
+    return match && /\b(?:PLAY|SPECTRUM)\b/i.test(codeMask(match[1]));
+  }) ? '128' : '48';
+}
+
 function parseProgram(text) {
   const errors = [];
   const warnings = [];
   const programLines = [];
   const seen = new Set();
+  const model = effectiveBasicModel(text);
   const physicalLines = text.replace(/\r/g, '').split('\n');
 
   physicalLines.forEach((raw, index) => {
@@ -333,7 +357,10 @@ function parseProgram(text) {
       errors.push({line: index + 1, message: 'IF on line ' + number + ' needs THEN.'});
     }
     try {
-      const tokenised = tokeniseBody(body);
+      if (model === '48' && /\b(?:PLAY|SPECTRUM)\b/i.test(codeMask(body))) {
+        throw Error('PLAY and SPECTRUM require a 128K BASIC target.');
+      }
+      const tokenised = tokeniseBody(body, model);
       const statementKeywords = tokenised.keywords.filter(keyword => STATEMENTS.has(keyword));
       if (!statementKeywords.length) {
         warnings.push({line: index + 1, message: 'No recognised Spectrum BASIC statement was found on line ' + number + '.'});
@@ -385,7 +412,7 @@ function parseProgram(text) {
     }
   });
   if (!programLines.length) errors.push({line: 1, message: 'The program is empty.'});
-  return {errors, warnings, lines: programLines};
+  return {errors, warnings, lines: programLines, model};
 }
 
 function codeMask(body) {
@@ -551,7 +578,7 @@ function renumberProgram() {
 }
 
 const KEYWORD_PARTS = new Set(
-  TOKENS.flatMap(keyword => [
+  [...TOKENS, ...TOKENS_128.map(token => token.keyword)].flatMap(keyword => [
     ...keyword.replace(/[^A-Z$ ]/g, ' ').split(/\s+/),
     keyword.replace(/[^A-Z$]/g, '')
   ]).filter(Boolean)
@@ -776,6 +803,7 @@ function validateProgram() {
   result.programBytes = result.errors.length ? [] : buildProgramBytes(result);
   lastResult = result;
   $('#lineStat').textContent = result.lines.length;
+  $('#targetStat').textContent = result.model + 'K';
   $('#sizeStat').textContent = result.programBytes.length + ' bytes';
   $('#errorStat').textContent = result.errors.length;
   $('#warningStat').textContent = result.warnings.length;
@@ -910,7 +938,8 @@ function newProject() {
     projectName: 'My BASIC Program',
     source: '10 REM MY SPECTRUM PROGRAM\n20 PRINT "HELLO!"\n',
     tapName: 'BASIC',
-    autostartLine: '10'
+    autostartLine: '10',
+    targetModel: 'auto'
   }, false);
   currentCloudId = null;
   $('#updateCloud').disabled = true;
@@ -1384,9 +1413,10 @@ $('#openShared').onclick = () => {
   $('#updateCloud').disabled = true;
   closeCloud();
 };
-['projectName', 'tapName', 'autostartLine'].forEach(id =>
+['projectName', 'tapName', 'autostartLine', 'targetModel'].forEach(id =>
   $('#' + id).addEventListener('input', () => setDirty())
 );
+$('#targetModel').addEventListener('change', validateProgram);
 document.querySelectorAll('.tab').forEach(tab => {
   tab.onclick = () => {
     document.querySelectorAll('.tab,.tabbody').forEach(element => element.classList.remove('active'));

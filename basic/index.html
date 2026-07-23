@@ -27,7 +27,7 @@
 <section class="panel">
   <div class="panel-head"><h2>BASIC listing</h2><div class="toolbar"><button class="btn" id="exampleBtn">Example</button><button class="btn" id="clearBtn">Clear</button><button class="btn primary" id="validateBtn">Validate</button></div></div>
   <div class="editor-wrap"><div class="lines" id="lines">1</div><textarea class="editor" id="source" spellcheck="false" aria-label="Sinclair BASIC listing"></textarea></div>
-  <div class="statusbar"><span>Program lines: <strong id="lineStat">0</strong></span><span>Tokenised size: <strong id="sizeStat">0 bytes</strong></span><span>Errors: <strong id="errorStat">0</strong></span><span>Warnings: <strong id="warningStat">0</strong></span></div>
+  <div class="statusbar"><span>Program lines: <strong id="lineStat">0</strong></span><span>Target: <strong id="targetStat">48K</strong></span><span>Tokenised size: <strong id="sizeStat">0 bytes</strong></span><span>Errors: <strong id="errorStat">0</strong></span><span>Warnings: <strong id="warningStat">0</strong></span></div>
 </section>
 <section class="stack">
   <section class="panel collapsible-panel">
@@ -45,9 +45,10 @@
       <div class="formgrid">
         <div class="field"><label for="tapName">TAP name</label><input id="tapName" maxlength="10" value="BASIC"></div>
         <div class="field"><label for="autostartLine">Autostart line</label><input id="autostartLine" value="10" inputmode="numeric"></div>
+        <div class="field"><label for="targetModel">BASIC target</label><select id="targetModel"><option value="auto">Auto-detect</option><option value="48">48K BASIC</option><option value="128">128K BASIC</option></select></div>
       </div>
       <div class="export-actions"><button class="btn primary" id="tapBtn">Download TAP</button><button class="btn" id="basBtn">Download BAS</button><button class="btn" id="copyBtn">Copy Listing</button></div>
-      <p class="mini">The TAP contains a genuine tokenised Spectrum BASIC program and can autostart at the selected line.</p>
+      <p class="mini">Auto-detect selects 128K when PLAY or SPECTRUM is used; otherwise it builds classic 48K BASIC.</p>
     </div>
   </section>
   <section class="panel collapsible-panel collapsed">
@@ -190,6 +191,7 @@
           <article class="help-card"><h4>Use Spectrum colour</h4><p>INK is foreground, PAPER is background, and BRIGHT affects the complete 8×8 attribute cell.</p></article>
         </div>
         <aside class="help-tip"><strong>Binary graphics data:</strong> <code>BIN 11111111</code> means 255, not eleven million. BIN accepts only 0 and 1 and is ideal for writing readable 8-pixel UDG rows.</aside>
+        <aside class="help-note"><strong>48K or 128K?</strong> Leave BASIC target on Auto-detect for most programs. PLAY and SPECTRUM select 128K token rules. In 128 BASIC, bytes used by 48K UDG T and U become those two commands, so UDGs are limited to A–S.</aside>
       </section>
 
       <section id="basic-help-cloud" class="help-section">
@@ -229,7 +231,7 @@
 
       <section id="basic-help-udgs" class="help-section">
         <h3><span>9</span> BASIC and user-defined graphics</h3>
-        <p>On a real Spectrum, UDGs A–U are entered in Graphics mode. In this editor, write <code>\A</code> through <code>\U</code> inside a string. TAP export converts each sequence into the real Spectrum UDG character byte from 144 to 164.</p>
+        <p>On a real Spectrum, UDGs are entered in Graphics mode. In this editor, write <code>\A</code onward inside a string. A 48K target supports A–U; a 128K target supports A–S because its last two character codes are reassigned to SPECTRUM and PLAY.</p>
         <pre>10 PRINT AT 10,15;"\A"
 20 PRINT AT 12,11;"UDGS B TO U: \B\C\D ... \U"</pre>
         <p>The readable backslash notation remains unchanged in JSON and BAS source. Only the tokenised TAP receives the special UDG bytes, ready to display whatever patterns are currently installed in the Spectrum's UDG definitions.</p>

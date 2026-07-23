@@ -252,6 +252,38 @@ The source page uses `?v=dev`, so it continues to work when opened directly with
 
 Minification is kept lightweight so the deployed editor starts quickly. Heavy control-flow obfuscation was deliberately avoided because it more than tripled the JavaScript size and slowed initialisation.
 
+## Cloud projects beta
+
+Cloud Projects are developed separately on the `feature/cloud-projects-beta`
+branch. The beta adds private server saves, Google sign-in, explicitly published
+project and TAP links, and an administrator view for managing users and projects.
+
+The browser sends the same project structure used by the downloaded JSON file.
+PHP validates it, stores compressed project data outside the public web
+directory, and keeps metadata in SQLite. Published TAP files are also stored
+privately and served through a controlled public endpoint.
+
+To build the beta:
+
+```sh
+./build.sh 2.0.0-beta.1
+```
+
+The build copies the PHP API into `dist/api` and adds the rewrite rule used for
+short TAP links. Private configuration is not included in `dist`. Copy
+`server/config.example.php` to the server-side data directory as `config.php`,
+then set the Google OAuth web client ID and administrator email.
+
+For Google Identity Services, configure this authorised JavaScript origin:
+
+```text
+https://keilanknight.com
+```
+
+No Google password or access token is stored. The verified Google account ID is
+used as the stable identity; the accompanying name, email address, and profile
+picture are stored for account display and administration.
+
 ## Release
 
 The current release is `v1.0.0`.

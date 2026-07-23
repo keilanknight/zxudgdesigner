@@ -142,6 +142,37 @@ const closeHelpBottomButton = document.getElementById("closeHelpBottom");
 const helpDialogBody = helpOverlay.querySelector(".help-dialog-body");
 const pasteUdgButton = document.getElementById("pasteUdg");
 let helpPreviousFocus = null;
+const openCloudButton = document.getElementById("openCloud");
+const cloudOverlay = document.getElementById("cloudOverlay");
+const closeCloudButton = document.getElementById("closeCloud");
+const cloudStatus = document.getElementById("cloudStatus");
+const cloudSignedOut = document.getElementById("cloudSignedOut");
+const cloudSignedIn = document.getElementById("cloudSignedIn");
+const googleSignInButton = document.getElementById("googleSignInButton");
+const googleSetupMessage = document.getElementById("googleSetupMessage");
+const cloudUserPicture = document.getElementById("cloudUserPicture");
+const cloudUserName = document.getElementById("cloudUserName");
+const cloudUserEmail = document.getElementById("cloudUserEmail");
+const cloudProjectNameInput = document.getElementById("cloudProjectName");
+const cloudSaveNewButton = document.getElementById("cloudSaveNew");
+const cloudUpdateButton = document.getElementById("cloudUpdate");
+const cloudProjectList = document.getElementById("cloudProjectList");
+const sharedProjectPanel = document.getElementById("sharedProjectPanel");
+const sharedProjectName = document.getElementById("sharedProjectName");
+const sharedProjectOwner = document.getElementById("sharedProjectOwner");
+const sharedTapLink = document.getElementById("sharedTapLink");
+const openCloudAdminButton = document.getElementById("openCloudAdmin");
+const cloudAdminPanel = document.getElementById("cloudAdminPanel");
+const adminSummary = document.getElementById("adminSummary");
+const adminUserList = document.getElementById("adminUserList");
+const adminProjectList = document.getElementById("adminProjectList");
+let cloudPreviousFocus = null;
+let cloudConfig = null;
+let cloudUser = null;
+let cloudProjects = [];
+let currentCloudProjectId = null;
+let sharedCloudProject = null;
+let googleScriptPromise = null;
 
 function blankGrid() {
   return Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
@@ -2523,6 +2554,569 @@ function configureResponsiveUi() {
   }
 }
 
+function setCloudStatus(message, isError = false) {
+  cloudStatus.textContent = message;
+  cloudStatus.classList.toggle("error", isError);
+}
+
+async function cloudApi(action, options = {}) {
+  const query = new URLSearchParams({ action });
+  if (options.query) {
+    Object.entries(options.query).forEach(([key, value]) => query.set(key, value));
+  }
+
+  const request = {
+    method: options.method || "GET",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json"
+    }
+  };
+
+  if (options.body !== undefined) {
+    request.headers["Content-Type"] = "application/json";
+    if (cloudConfig && cloudConfig.csrf) {
+      request.headers["X-CSRF-Token"] = cloudConfig.csrf;
+    }
+    request.body = JSON.stringify(options.body);
+  }
+
+  const response = await fetch("api/index.php?" + query.toString(), request);
+  let payload;
+
+  try {
+    payload = await response.json();
+  } catch (error) {
+    throw new Error("The cloud service returned an unreadable response.");
+  }
+
+  if (!response.ok || !payload.ok) {
+    throw new Error(payload.error || "The cloud request failed.");
+  }
+
+  return payload;
+}
+
+function formatCloudBytes(bytes) {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+}
+
+function formatCloudDate(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleString();
+}
+
+function makeCloudButton(label, handler, options = {}) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = label;
+  if (options.className) button.className = options.className;
+  if (options.disabled) button.disabled = true;
+  button.addEventListener("click", handler);
+  return button;
+}
+
+function updateCloudAccountUi() {
+  const signedIn = cloudUser !== null;
+  cloudSignedOut.hidden = signedIn;
+  cloudSignedIn.hidden = !signedIn;
+
+  if (!signedIn) return;
+
+  cloudUserName.textContent = cloudUser.name;
+  cloudUserEmail.textContent = cloudUser.email;
+  if (cloudUser.picture) {
+    cloudUserPicture.src = cloudUser.picture;
+    cloudUserPicture.hidden = false;
+  } else {
+    cloudUserPicture.removeAttribute("src");
+    cloudUserPicture.hidden = true;
+  }
+  openCloudAdminButton.hidden = cloudUser.role !== "admin";
+  cloudUpdateButton.disabled = currentCloudProjectId === null;
+  cloudProjectNameInput.value =
+    cloudProjectNameInput.value || projectNameInput.value.trim() || "My Spectrum Graphics";
+}
+
+function renderCloudProjects() {
+  cloudProjectList.replaceChildren();
+
+  if (!cloudProjects.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-cloud-message";
+    empty.textContent = "No cloud projects yet. Save this one as your first.";
+    cloudProjectList.appendChild(empty);
+    return;
+  }
+
+  cloudProjects.forEach((project) => {
+    const card = document.createElement("article");
+    card.className = "cloud-project-card";
+    if (project.id === currentCloudProjectId) card.classList.add("current");
+
+    const header = document.createElement("div");
+    header.className = "cloud-project-card-header";
+    const heading = document.createElement("h4");
+    heading.textContent = project.name;
+    const badge = document.createElement("strong");
+    badge.textContent = project.published ? "Published" : "Private";
+    header.append(heading, badge);
+
+    const meta = document.createElement("p");
+    meta.className = "cloud-project-meta";
+    meta.textContent =
+      "Updated " + formatCloudDate(project.updatedAt) +
+      " · " + formatCloudBytes(project.projectBytes + project.tapBytes);
+
+    const actions = document.createElement("div");
+    actions.className = "button-row";
+    actions.appendChild(makeCloudButton("Open", () => loadCloudProject(project.id)));
+
+    if (project.id === currentCloudProjectId) {
+      actions.appendChild(makeCloudButton("Save", () => saveCloudProject(project.id)));
+      actions.appendChild(
+        makeCloudButton(
+          project.published ? "Update TAP" : "Publish TAP",
+          () => publishCloudProject(project.id)
+        )
+      );
+    }
+
+    if (project.published) {
+      actions.appendChild(makeCloudButton("Copy Share Link", () => copyCloudLink(project.shareUrl)));
+      const tapLink = document.createElement("a");
+      tapLink.className = "button-link";
+      tapLink.href = project.tapUrl;
+      tapLink.target = "_blank";
+      tapLink.rel = "noopener";
+      tapLink.textContent = "Open TAP";
+      actions.appendChild(tapLink);
+      actions.appendChild(makeCloudButton("Unpublish", () => unpublishCloudProject(project.id)));
+    }
+
+    actions.appendChild(makeCloudButton("Delete", () => deleteCloudProject(project)));
+    card.append(header, meta, actions);
+    cloudProjectList.appendChild(card);
+  });
+}
+
+async function refreshCloudProjects() {
+  if (!cloudUser) return;
+  try {
+    const response = await cloudApi("projects");
+    cloudProjects = response.projects;
+    renderCloudProjects();
+  } catch (error) {
+    setCloudStatus(error.message, true);
+  }
+}
+
+async function saveCloudProject(projectId = null, quiet = false) {
+  if (!cloudUser) {
+    setCloudStatus("Sign in before saving to the cloud.", true);
+    return null;
+  }
+
+  const name = cloudProjectNameInput.value.trim() ||
+    projectNameInput.value.trim() ||
+    "My Spectrum Graphics";
+  setCloudStatus(projectId ? "Updating cloud project…" : "Saving new cloud project…");
+
+  try {
+    const response = await cloudApi("save-project", {
+      method: "POST",
+      body: {
+        id: projectId,
+        name,
+        project: getProjectData()
+      }
+    });
+    currentCloudProjectId = response.project.id;
+    projectNameInput.value = response.project.name;
+    cloudProjectNameInput.value = response.project.name;
+    projectHasUnsavedChanges = false;
+    saveRecoveryProject();
+    cloudUpdateButton.disabled = false;
+    await refreshCloudProjects();
+    if (!quiet) setCloudStatus("Cloud project saved");
+    return response.project;
+  } catch (error) {
+    setCloudStatus(error.message, true);
+    return null;
+  }
+}
+
+async function loadCloudProject(projectId) {
+  if (
+    projectHasUnsavedChanges &&
+    !window.confirm("Open this cloud project and replace your current unsaved changes?")
+  ) {
+    return;
+  }
+
+  setCloudStatus("Opening cloud project…");
+  try {
+    const response = await cloudApi("load-project", {
+      query: { id: projectId }
+    });
+    loadProjectData(response.project, {
+      dirty: false,
+      statusMessage: "Cloud project loaded"
+    });
+    currentCloudProjectId = response.meta.id;
+    cloudProjectNameInput.value = response.meta.name;
+    cloudUpdateButton.disabled = false;
+    renderCloudProjects();
+    setCloudStatus("Cloud project opened");
+    closeCloud();
+  } catch (error) {
+    setCloudStatus(error.message, true);
+  }
+}
+
+function tapBytesToBase64(bytes) {
+  let binary = "";
+  const chunkSize = 8192;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.slice(offset, offset + chunkSize));
+  }
+  return btoa(binary);
+}
+
+async function publishCloudProject(projectId) {
+  if (projectId !== currentCloudProjectId) {
+    setCloudStatus("Open the project before publishing it.", true);
+    return;
+  }
+
+  const saved = await saveCloudProject(projectId, true);
+  if (!saved) return;
+
+  setCloudStatus("Building and publishing TAP…");
+  try {
+    const tap = buildTapFile();
+    const response = await cloudApi("publish-project", {
+      method: "POST",
+      body: {
+        id: projectId,
+        tap: tapBytesToBase64(tap.bytes)
+      }
+    });
+    await refreshCloudProjects();
+    setCloudStatus("Published. The share and TAP links are ready.");
+    await copyCloudLink(response.project.tapUrl, false);
+  } catch (error) {
+    setCloudStatus(error.message, true);
+  }
+}
+
+async function unpublishCloudProject(projectId) {
+  if (!window.confirm("Remove the public project and TAP links? Your private cloud save will remain.")) {
+    return;
+  }
+  try {
+    await cloudApi("unpublish-project", {
+      method: "POST",
+      body: { id: projectId }
+    });
+    await refreshCloudProjects();
+    setCloudStatus("Project is private again");
+  } catch (error) {
+    setCloudStatus(error.message, true);
+  }
+}
+
+async function deleteCloudProject(project) {
+  if (!window.confirm('Delete the cloud project "' + project.name + '"? This cannot be undone.')) {
+    return;
+  }
+  try {
+    await cloudApi("delete-project", {
+      method: "POST",
+      body: { id: project.id }
+    });
+    if (currentCloudProjectId === project.id) {
+      currentCloudProjectId = null;
+      cloudUpdateButton.disabled = true;
+    }
+    await refreshCloudProjects();
+    setCloudStatus("Cloud project deleted");
+  } catch (error) {
+    setCloudStatus(error.message, true);
+  }
+}
+
+async function copyCloudLink(url, showMessage = true) {
+  try {
+    await navigator.clipboard.writeText(url);
+    if (showMessage) setCloudStatus("Share link copied");
+  } catch (error) {
+    window.prompt("Copy this link:", url);
+  }
+}
+
+function loadGoogleIdentityScript() {
+  if (window.google && window.google.accounts) return Promise.resolve();
+  if (googleScriptPromise) return googleScriptPromise;
+
+  googleScriptPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.addEventListener("load", resolve, { once: true });
+    script.addEventListener("error", () => reject(new Error("Google sign-in could not be loaded.")), {
+      once: true
+    });
+    document.head.appendChild(script);
+  });
+  return googleScriptPromise;
+}
+
+async function handleGoogleCredential(response) {
+  setCloudStatus("Verifying Google sign-in…");
+  try {
+    const result = await cloudApi("google-login", {
+      method: "POST",
+      body: { credential: response.credential }
+    });
+    cloudUser = result.user;
+    updateCloudAccountUi();
+    await refreshCloudProjects();
+    setCloudStatus("Signed in");
+  } catch (error) {
+    setCloudStatus(error.message, true);
+  }
+}
+
+async function prepareGoogleSignIn() {
+  if (
+    !cloudConfig ||
+    !cloudConfig.googleClientId ||
+    cloudConfig.googleClientId === "REPLACE_WITH_GOOGLE_CLIENT_ID"
+  ) {
+    googleSetupMessage.hidden = false;
+    return;
+  }
+
+  try {
+    await loadGoogleIdentityScript();
+    googleSetupMessage.hidden = true;
+    googleSignInButton.replaceChildren();
+    window.google.accounts.id.initialize({
+      client_id: cloudConfig.googleClientId,
+      callback: handleGoogleCredential,
+      auto_select: false,
+      cancel_on_tap_outside: true
+    });
+    window.google.accounts.id.renderButton(googleSignInButton, {
+      type: "standard",
+      theme: "outline",
+      size: "large",
+      text: "signin_with",
+      shape: "rectangular"
+    });
+  } catch (error) {
+    setCloudStatus(error.message, true);
+  }
+}
+
+async function signOutCloud() {
+  try {
+    const response = await cloudApi("logout", { method: "POST", body: {} });
+    cloudConfig.csrf = response.csrf;
+    cloudUser = null;
+    cloudProjects = [];
+    currentCloudProjectId = null;
+    cloudAdminPanel.hidden = true;
+    updateCloudAccountUi();
+    await prepareGoogleSignIn();
+    setCloudStatus("Signed out");
+  } catch (error) {
+    setCloudStatus(error.message, true);
+  }
+}
+
+async function loadSharedProject(slug) {
+  try {
+    const response = await cloudApi("public-project", { query: { slug } });
+    sharedCloudProject = response;
+    sharedProjectName.textContent = response.meta.name;
+    sharedProjectOwner.textContent = "Shared by " + response.meta.owner;
+    sharedTapLink.href = response.meta.tapUrl;
+    sharedProjectPanel.hidden = false;
+    openCloud();
+  } catch (error) {
+    setCloudStatus(error.message, true);
+    openCloud();
+  }
+}
+
+function openSharedProjectInEditor() {
+  if (!sharedCloudProject) return;
+  if (
+    projectHasUnsavedChanges &&
+    !window.confirm("Open this shared project and replace your current unsaved changes?")
+  ) {
+    return;
+  }
+  loadProjectData(sharedCloudProject.project, {
+    dirty: true,
+    statusMessage: "Shared project opened"
+  });
+  currentCloudProjectId = null;
+  cloudProjectNameInput.value = sharedCloudProject.meta.name;
+  cloudUpdateButton.disabled = true;
+  closeCloud();
+}
+
+async function loadAdminPanel() {
+  setCloudStatus("Loading administrator data…");
+  try {
+    const response = await cloudApi("admin-summary");
+    cloudAdminPanel.hidden = false;
+    renderAdminSummary(response.users, response.projects);
+    setCloudStatus("");
+  } catch (error) {
+    setCloudStatus(error.message, true);
+  }
+}
+
+function renderAdminSummary(users, projects) {
+  adminSummary.replaceChildren();
+  const totalBytes = users.reduce((sum, user) => sum + user.storageBytes, 0);
+  const published = projects.filter((project) => project.published).length;
+  [
+    ["Users", users.length],
+    ["Projects", projects.length],
+    ["Published", published],
+    ["Storage", formatCloudBytes(totalBytes)]
+  ].forEach(([label, value]) => {
+    const stat = document.createElement("div");
+    stat.className = "admin-stat";
+    const strong = document.createElement("strong");
+    strong.textContent = value;
+    const span = document.createElement("span");
+    span.textContent = label;
+    stat.append(strong, span);
+    adminSummary.appendChild(stat);
+  });
+
+  adminUserList.replaceChildren();
+  users.forEach((user) => {
+    const row = document.createElement("div");
+    row.className = "admin-row";
+    if (user.status !== "active") row.classList.add("disabled");
+    const details = document.createElement("div");
+    const name = document.createElement("strong");
+    name.textContent = user.name + (user.role === "admin" ? " · Admin" : "");
+    const meta = document.createElement("div");
+    meta.className = "admin-meta";
+    meta.textContent =
+      user.email + " · " + user.projectCount + " projects · " +
+      formatCloudBytes(user.storageBytes) + " · Last login " +
+      formatCloudDate(user.lastLoginAt);
+    details.append(name, meta);
+    const actions = document.createElement("div");
+    actions.className = "button-row";
+    if (cloudUser && user.id !== cloudUser.id) {
+      actions.appendChild(
+        makeCloudButton(
+          user.status === "active" ? "Disable" : "Enable",
+          () => setAdminUserStatus(user.id, user.status === "active" ? "disabled" : "active")
+        )
+      );
+    }
+    row.append(details, actions);
+    adminUserList.appendChild(row);
+  });
+
+  adminProjectList.replaceChildren();
+  projects.forEach((project) => {
+    const row = document.createElement("div");
+    row.className = "admin-row";
+    const details = document.createElement("div");
+    const name = document.createElement("strong");
+    name.textContent = project.name;
+    const meta = document.createElement("div");
+    meta.className = "admin-meta";
+    meta.textContent =
+      project.ownerName + " · " + project.ownerEmail + " · " +
+      (project.published ? "Published" : "Private") + " · " +
+      formatCloudBytes(project.projectBytes + project.tapBytes);
+    details.append(name, meta);
+    const actions = document.createElement("div");
+    actions.className = "button-row";
+    actions.appendChild(makeCloudButton("Delete", () => adminDeleteProject(project)));
+    row.append(details, actions);
+    adminProjectList.appendChild(row);
+  });
+}
+
+async function setAdminUserStatus(userId, statusValue) {
+  if (!window.confirm((statusValue === "disabled" ? "Disable" : "Enable") + " this user?")) {
+    return;
+  }
+  try {
+    await cloudApi("admin-user-status", {
+      method: "POST",
+      body: { userId, status: statusValue }
+    });
+    await loadAdminPanel();
+  } catch (error) {
+    setCloudStatus(error.message, true);
+  }
+}
+
+async function adminDeleteProject(project) {
+  if (!window.confirm('Permanently delete "' + project.name + '" from this user?')) return;
+  try {
+    await cloudApi("admin-delete-project", {
+      method: "POST",
+      body: { id: project.id }
+    });
+    await loadAdminPanel();
+  } catch (error) {
+    setCloudStatus(error.message, true);
+  }
+}
+
+async function initialiseCloudProjects() {
+  try {
+    cloudConfig = await cloudApi("config");
+    const response = await cloudApi("me");
+    cloudUser = response.user;
+    updateCloudAccountUi();
+    if (cloudUser) await refreshCloudProjects();
+    else await prepareGoogleSignIn();
+
+    const sharedSlug = new URLSearchParams(window.location.search).get("project");
+    if (sharedSlug) await loadSharedProject(sharedSlug);
+  } catch (error) {
+    setCloudStatus(
+      window.location.protocol === "file:"
+        ? "Cloud Projects are available on the hosted beta."
+        : error.message,
+      true
+    );
+  }
+}
+
+function openCloud() {
+  cloudPreviousFocus = document.activeElement;
+  cloudOverlay.hidden = false;
+  document.body.classList.add("help-open");
+  closeCloudButton.focus();
+}
+
+function closeCloud() {
+  if (cloudOverlay.hidden) return;
+  cloudOverlay.hidden = true;
+  document.body.classList.remove("help-open");
+  if (cloudPreviousFocus instanceof HTMLElement) cloudPreviousFocus.focus();
+}
+
 function openHelp() {
   helpPreviousFocus = document.activeElement;
   helpOverlay.hidden = false;
@@ -2575,6 +3169,54 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+openCloudButton.addEventListener("click", () => {
+  if (!cloudProjectNameInput.value) {
+    cloudProjectNameInput.value = projectNameInput.value.trim() || "My Spectrum Graphics";
+  }
+  openCloud();
+});
+closeCloudButton.addEventListener("click", closeCloud);
+cloudOverlay.addEventListener("click", (event) => {
+  if (event.target === cloudOverlay) closeCloud();
+});
+document.getElementById("cloudSignOut").addEventListener("click", signOutCloud);
+cloudSaveNewButton.addEventListener("click", () => saveCloudProject());
+cloudUpdateButton.addEventListener("click", () => saveCloudProject(currentCloudProjectId));
+document.getElementById("refreshCloudProjects").addEventListener("click", refreshCloudProjects);
+document.getElementById("openSharedProject").addEventListener("click", openSharedProjectInEditor);
+openCloudAdminButton.addEventListener("click", loadAdminPanel);
+document.getElementById("closeCloudAdmin").addEventListener("click", () => {
+  cloudAdminPanel.hidden = true;
+});
+
+document.addEventListener("keydown", (event) => {
+  if (cloudOverlay.hidden) return;
+
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeCloud();
+    return;
+  }
+
+  if (event.key !== "Tab") return;
+  const focusable = Array.from(
+    cloudOverlay.querySelectorAll(
+      'a[href]:not([hidden]), button:not([disabled]):not([hidden]), input:not([disabled]):not([hidden])'
+    )
+  ).filter((element) => element.offsetParent !== null);
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (!first || !last) return;
+
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+});
+
 buildCollapsiblePanels();
 configureResponsiveUi();
 window.addEventListener("resize", configureResponsiveUi);
@@ -2589,3 +3231,4 @@ restoreRecoveryProject();
 refreshAll();
 refreshScreenControls();
 refreshTapInstructions();
+initialiseCloudProjects();

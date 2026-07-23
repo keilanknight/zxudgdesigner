@@ -28,6 +28,8 @@ fi
 
 mkdir -p dist
 cp index.html dist/index.html
+mkdir -p dist/api
+cp server/api/bootstrap.php server/api/index.php server/api/tap.php server/api/.htaccess dist/api/
 
 find dist -maxdepth 1 -type f \( \
   -name 'app.js' -o \
@@ -52,12 +54,19 @@ npx --yes terser app.js \
 printf '%s\n' "$build_version" > VERSION
 
 printf '%s\n' \
+  'Options -Indexes' \
+  '<IfModule mod_rewrite.c>' \
+  '  RewriteEngine On' \
+  '  RewriteRule ^t/([A-Za-z0-9_-]{12})\.tap$ api/tap.php?slug=$1 [L,QSA]' \
+  '</IfModule>' \
   '<IfModule mod_headers.c>' \
   '  <Files "index.html">' \
   '    Header set Cache-Control "no-cache, no-store, must-revalidate"' \
   '    Header set Pragma "no-cache"' \
   '    Header set Expires "0"' \
   '  </Files>' \
+  '  Header set X-Content-Type-Options "nosniff"' \
+  '  Header set Referrer-Policy "same-origin"' \
   '</IfModule>' > dist/.htaccess
 
 printf '%s\n' \

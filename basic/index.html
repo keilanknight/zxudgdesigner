@@ -8,7 +8,7 @@
 </head>
 <body>
 <header>
-  <div class="header-row"><div class="title"><h1><span class="spectrum-logo" aria-hidden="true"></span>ZX Spectrum Studio</h1><p>Sinclair BASIC — write, check and build real tokenised Spectrum TAP files.</p></div><div class="header-actions"><a class="studio-link" href="../">UDG Designer</a><a class="studio-link current" href="./" aria-current="page">BASIC</a><a class="studio-link" href="../assembler/">Assembler</a><span class="badge">STUDIO PREVIEW</span></div></div>
+  <div class="header-row"><div class="title"><h1><span class="spectrum-logo" aria-hidden="true"></span>ZX Spectrum Studio</h1><p>Sinclair BASIC — write, check and build real tokenised Spectrum TAP files.</p></div><div class="header-actions"><a class="studio-link" href="../">UDG Designer</a><a class="studio-link current" href="./" aria-current="page">BASIC</a><a class="studio-link" href="../assembler/">Assembler</a><button id="openHelp" class="help-button" type="button" title="Open the BASIC guide" aria-haspopup="dialog" aria-label="Help"><svg viewBox="0 0 512 512" aria-hidden="true"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8Zm0 448C145.5 456 56 366.5 56 256S145.5 56 256 56s200 89.5 200 200-89.5 200-200 200Zm107.2-273c0 67.1-72.4 68.1-72.4 92.9V288c0 6.6-5.4 12-12 12h-45.6c-6.6 0-12-5.4-12-12v-16.5c0-35.7 27.1-50 47.6-61.5 17.6-9.8 28.4-16.7 28.4-28.7 0-15.8-20.2-26.3-36.8-26.3-21.7 0-31.4 10.3-45.3 27.9-4.1 5.2-11.6 6.1-16.8 2.1l-27.8-21.1c-5.1-3.9-6.2-11.1-2.5-16.3 22.2-31 50.6-48.6 92.4-48.6 49.4 0 102.8 38.9 102.8 84Zm-62.4 173a44.8 44.8 0 1 1-89.6 0 44.8 44.8 0 0 1 89.6 0Z"/></svg></button><span class="badge">STUDIO PREVIEW</span></div></div>
   <div class="project-bar">
     <label class="project-name">Project name<input id="projectName" maxlength="80" value="My BASIC Program"></label>
     <button class="btn" id="newProject">New Project</button>
@@ -78,6 +78,181 @@
   </section>
 </section>
 </main>
+<div id="helpOverlay" class="help-overlay" hidden>
+  <article class="help-dialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <header class="help-dialog-header">
+      <div><span class="help-kicker">PROGRAMMER'S FIELD GUIDE</span><h2 id="helpTitle">ZX Spectrum BASIC Studio</h2></div>
+      <button id="closeHelp" class="help-close" type="button" aria-label="Close help">×</button>
+    </header>
+    <div class="help-dialog-body">
+      <section class="help-intro">
+        <div class="help-spectrum-mark" aria-hidden="true"></div>
+        <div>
+          <h3>Ready. Line 10. Adventure!</h3>
+          <p>This is a friendly workshop for writing Sinclair BASIC on a modern keyboard, checking the listing, and turning it into a genuine tokenised Spectrum tape. Start small, press buttons, make the border flash alarming colours—your browser keeps a recovery copy while you experiment.</p>
+          <p class="help-byline">Created for the Spectrum scene by <strong>Keilan Knight</strong>.</p>
+        </div>
+      </section>
+
+      <nav class="help-contents" aria-label="BASIC help contents">
+        <strong>Jump to</strong>
+        <a href="#basic-help-start">Quick start</a>
+        <a href="#basic-help-editor">Editor</a>
+        <a href="#basic-help-projects">Saving</a>
+        <a href="#basic-help-files">Files</a>
+        <a href="#basic-help-tools">Program tools</a>
+        <a href="#basic-help-language">Learning BASIC</a>
+        <a href="#basic-help-cloud">Cloud</a>
+        <a href="#basic-help-qaop">QAOP</a>
+        <a href="#basic-help-udgs">UDGs</a>
+        <a href="#basic-help-trouble">Troubleshooting</a>
+      </nav>
+
+      <section id="basic-help-start" class="help-section">
+        <h3><span>1</span> Your first runnable program</h3>
+        <ol class="help-steps">
+          <li>Give the project a memorable name at the top of the page.</li>
+          <li>Choose <strong>Example</strong>, or replace the listing with three lines of your own.</li>
+          <li>Every stored instruction begins with a line number from 1 to 9999. Leaving gaps of ten makes later editing easier.</li>
+          <li>Choose <strong>Validate</strong>. Fix red errors; read yellow warnings and decide whether they matter.</li>
+          <li>Set the TAP name and an autostart line—normally your first line.</li>
+          <li>Choose <strong>Download TAP</strong>, load it in an emulator, and enjoy the sight of your browser-written BASIC running as Spectrum code.</li>
+        </ol>
+        <pre>10 BORDER 1: PAPER 0: INK 7: CLS
+20 PRINT AT 10,7;"HELLO SPECTRUM!"
+30 BEEP .1,10</pre>
+        <aside class="help-tip"><strong>Fastest test:</strong> save the project to the cloud, publish its TAP, then choose <strong>Try in QAOP</strong>. No cassette leads, no rewinding, no mysterious squeal required.</aside>
+      </section>
+
+      <section id="basic-help-editor" class="help-section">
+        <h3><span>2</span> The editor and validator</h3>
+        <p>The large left-hand area is an ordinary text editor for numbered Spectrum BASIC. The margin shows physical text rows; the numbers you type inside the listing are the actual BASIC line numbers.</p>
+        <div class="help-card-grid">
+          <article class="help-card"><h4>Example</h4><p>Loads a small known-good program. It is an excellent starting point for fearless tinkering.</p></article>
+          <article class="help-card"><h4>Clear</h4><p>Empties the listing. Undo can bring it back, and an empty editor is required before importing BAS.</p></article>
+          <article class="help-card"><h4>Validate</h4><p>Checks line numbers, duplicates, strings, brackets, common statement mistakes, jump targets, and Spectrum variable rules.</p></article>
+          <article class="help-card"><h4>Tokenised view</h4><p>Shows the bytes the Spectrum will store. Keywords such as PRINT occupy one token byte instead of five letters.</p></article>
+        </div>
+        <p>Click a reported problem to jump to its physical source row. Validation catches many useful mistakes, but it is not a complete Spectrum emulator: a program can be structurally sensible and still do something wonderfully unintended when run.</p>
+        <aside class="help-note"><strong>A warning is not always an error.</strong> A jump to a missing line can be intentional on a Spectrum, which continues at the next available line. The Studio points it out instead of pretending to know your plan.</aside>
+      </section>
+
+      <section id="basic-help-projects" class="help-section">
+        <h3><span>3</span> Saving, recovery, Undo and Redo</h3>
+        <ul>
+          <li><strong>Save Project</strong> downloads an editable JSON project containing the listing, name and TAP settings.</li>
+          <li><strong>Load Project</strong> opens one of those JSON projects later.</li>
+          <li><strong>New Project</strong> starts afresh and asks before replacing unsaved work.</li>
+          <li><strong>Undo</strong> and <strong>Redo</strong> step through source changes. A complete renumber or variable rename is one undoable action.</li>
+          <li>The latest project is automatically recovered from this browser after a refresh or accidental closure.</li>
+          <li>If work has changed since the last explicit save, the browser also warns before leaving.</li>
+        </ul>
+        <aside class="help-tip"><strong>Recovery is a safety net, not an archive.</strong> Browser storage belongs to this browser and device and may be cleared. Download JSON projects—or use cloud saves—for work you care about.</aside>
+      </section>
+
+      <section id="basic-help-files" class="help-section">
+        <h3><span>4</span> JSON, BAS and TAP: three different jobs</h3>
+        <div class="help-card-grid">
+          <article class="help-card"><h4>Project JSON</h4><p>The Studio's editable master file. Use this when you want to return with the project name and export settings intact.</p></article>
+          <article class="help-card"><h4>BAS</h4><p>A readable, plain-text numbered listing. It is convenient for source archives, version control and moving listings between compatible tools.</p></article>
+          <article class="help-card"><h4>TAP</h4><p>A virtual Spectrum tape containing the real tokenised program. Use this for emulators and suitable real-hardware loading solutions.</p></article>
+          <article class="help-card"><h4>Copy Listing</h4><p>Copies the readable source to the clipboard for a forum post, message, document or another editor.</p></article>
+        </div>
+        <p>To protect the current listing, <strong>Import BAS</strong> works only while the editor is empty. Choose Clear first, then import. BAS files are used in several slightly different ways by Spectrum tools; this preview imports and exports the straightforward plain-text form.</p>
+        <p>The <strong>Autostart line</strong> tells the Spectrum which line to run after loading. Leave it blank or invalid if you want a program that loads without automatically running.</p>
+      </section>
+
+      <section id="basic-help-tools" class="help-section">
+        <h3><span>5</span> Renumber and Variable Explorer</h3>
+        <h4>Renumber without crossed wires</h4>
+        <p>Open Renumber below Export. Choose the whole program or an inclusive existing-line range, then set the first new line and increment. Before changing a single character, the Studio calculates the complete result.</p>
+        <p>If a proposed number collides with an untouched line, duplicates another result, or exceeds 9999, the operation is cancelled. Literal GO TO, GO SUB, RESTORE, RUN and LIST targets follow lines that move—even when the reference sits outside the selected range. Calculated targets, strings and REM comments are left alone.</p>
+        <h4>Know your variables</h4>
+        <p>Variable Explorer updates as you type and separates ordinary numbers, strings, arrays and FOR/NEXT controls. Enter a new name beside a variable and choose Rename. Exact code references change; matching words inside strings and comments do not.</p>
+        <ul>
+          <li>Ordinary numeric names may be descriptive, such as <code>score</code> or <code>lives2</code>.</li>
+          <li>Simple string names use one letter plus <code>$</code>, such as <code>n$</code>.</li>
+          <li>Array names and FOR/NEXT control variables use a single letter.</li>
+          <li>A rename is refused if the new name is invalid or already belongs to another variable.</li>
+        </ul>
+      </section>
+
+      <section id="basic-help-language" class="help-section">
+        <h3><span>6</span> Getting to grips with Spectrum BASIC</h3>
+        <p>The folded <strong>Spectrum BASIC help</strong> panel is a quick memory-jogger. Search for PRINT, FOR, POKE, UDG or another topic. For a proper course and reference book, open the excellent online manual below.</p>
+        <p><a class="help-manual-link" href="https://zxspectrumvault.github.io/Manuals/Hardware/SpectrumPlus3Manual.html#chapter8" target="_blank" rel="noopener noreferrer">Read Chapter 8: The +3 BASIC Programmer's Guide ↗</a></p>
+        <p>Chapter 8 begins with simple programming concepts and builds through decisions, loops, subroutines, DATA, strings, functions, arrays, colour, graphics, sound, memory and machine code. The +3 has some later facilities, but the core Sinclair BASIC teaching is extremely useful for classic Spectrum programs.</p>
+        <div class="help-card-grid">
+          <article class="help-card"><h4>Make a decision</h4><p><code>IF lives=0 THEN GO TO 500</code></p></article>
+          <article class="help-card"><h4>Repeat something</h4><p><code>FOR n=1 TO 10: PRINT n: NEXT n</code></p></article>
+          <article class="help-card"><h4>Call a routine</h4><p><code>GO SUB 1000</code>, then finish it with <code>RETURN</code>.</p></article>
+          <article class="help-card"><h4>Use Spectrum colour</h4><p>INK is foreground, PAPER is background, and BRIGHT affects the complete 8×8 attribute cell.</p></article>
+        </div>
+      </section>
+
+      <section id="basic-help-cloud" class="help-section">
+        <h3><span>7</span> Cloud projects, calmly explained</h3>
+        <p>Cloud storage lets the same Google account reach private Studio projects from another browser or device. Google confirms who you are; the Studio never receives your Google password.</p>
+        <ol class="help-steps">
+          <li>Choose <strong>Cloud Projects</strong> and sign in with Google.</li>
+          <li>Enter a cloud project name and choose <strong>Save as New</strong>. This creates a private copy.</li>
+          <li>After editing, choose <strong>Update Current</strong>—or Save on that project's card—to replace the current cloud copy.</li>
+          <li>Choose <strong>Publish TAP</strong> only when you want public, shareable links.</li>
+          <li>Use <strong>Copy Project Link</strong> for a page where someone can inspect and open their own editable copy.</li>
+          <li>Use <strong>Copy TAP Link</strong> for the tape file itself, or <strong>Try in QAOP</strong> to run it immediately.</li>
+        </ol>
+        <h4>Private, published and deleted are different</h4>
+        <ul>
+          <li><strong>Private:</strong> only your signed-in account can open the cloud project.</li>
+          <li><strong>Published:</strong> anyone with the unlisted project or TAP link can access that published material.</li>
+          <li><strong>Unpublish:</strong> removes the public links but keeps your private cloud project.</li>
+          <li><strong>Delete:</strong> permanently removes that cloud project and its published TAP. Downloaded copies are unaffected.</li>
+        </ul>
+        <aside class="help-note"><strong>Save before publishing.</strong> Publishing first updates the current cloud project, validates the BASIC, builds a fresh TAP and gives it a new revision URL so emulator caches do not keep an older program.</aside>
+      </section>
+
+      <section id="basic-help-qaop" class="help-section">
+        <h3><span>8</span> What is QAOP, and what happens when I click it?</h3>
+        <p><a href="https://torinak.com/qaop/" target="_blank" rel="noopener noreferrer">QAOP</a> is a ZX Spectrum emulator that runs in a web browser. An emulator recreates the Spectrum in software: its processor, memory, display, keyboard and tape loading behaviour.</p>
+        <p>When you choose <strong>Try in QAOP</strong>, the Studio sends QAOP the public URL of your published TAP. QAOP downloads that tape from this site, loads it into its virtual Spectrum and runs the program. The TAP remains hosted here; QAOP is the machine playing it.</p>
+        <ol class="help-steps">
+          <li>Save the latest cloud project.</li>
+          <li>Publish—or Update TAP if it was already published.</li>
+          <li>Choose Try in QAOP on the project card.</li>
+          <li>Allow the emulator a moment to load. Click or tap its screen if the browser is waiting for interaction.</li>
+          <li>Use the emulated Spectrum keyboard controls as required by your program.</li>
+        </ol>
+        <aside class="help-tip"><strong>Sharing trick:</strong> the direct TAP URL can also be passed to other compatible online emulators or downloaded for desktop emulators and hardware workflows.</aside>
+      </section>
+
+      <section id="basic-help-udgs" class="help-section">
+        <h3><span>9</span> BASIC and user-defined graphics</h3>
+        <p>On a real Spectrum, UDGs A–U are entered in Graphics mode. Written listings often represent those special characters as <code>\A</code> through <code>\U</code>. The validator recognises that convention and explains it, but this first BASIC preview does not yet turn those sequences into UDG character bytes.</p>
+        <p>Use the <strong>UDG Designer</strong> in the top navigation to draw graphics, store their colours, build screens and export its graphics TAP. A future Studio workflow can bring graphics data and BASIC source closer together; for now they remain separate projects so each tool stays predictable.</p>
+      </section>
+
+      <section id="basic-help-trouble" class="help-section">
+        <h3><span>10</span> If the Spectrum gremlins arrive</h3>
+        <ul>
+          <li><strong>TAP will not export:</strong> open Problems and fix every red validation error.</li>
+          <li><strong>Old program appears in QAOP:</strong> Update TAP again and launch using the newly revised link.</li>
+          <li><strong>BAS will not import:</strong> Clear the editor first. Binary/tokenised BAS variants are not accepted by this text importer.</li>
+          <li><strong>Renumber refuses:</strong> read the collision message and choose a first line or increment that leaves untouched lines free.</li>
+          <li><strong>Cloud buttons are missing:</strong> sign in, open the cloud project, and ensure it is the current project before publishing.</li>
+          <li><strong>You refreshed:</strong> relax—the latest browser recovery copy should return automatically.</li>
+        </ul>
+        <p class="help-signoff">Write ten lines. Run them. Smile. Then add ten more. That is how Spectrum epics begin.</p>
+      </section>
+
+      <section class="help-contribute">
+        <h3>Help shape the Studio</h3>
+        <p>This is an open-source project. Report a problem, request a feature, contribute code, or tell us what you made.</p>
+        <a href="https://github.com/keilanknight/zxudgdesigner" target="_blank" rel="noopener noreferrer">keilanknight/zxudgdesigner ↗</a>
+      </section>
+      <button id="closeHelpBottom" class="help-back-button" type="button">← Back to BASIC</button>
+    </div>
+  </article>
+</div>
 <div class="cloud-overlay" id="cloudOverlay" hidden>
   <section class="cloud-dialog" role="dialog" aria-modal="true" aria-labelledby="cloudTitle">
     <div class="cloud-head"><div><strong>ZX SPECTRUM STUDIO</strong><h2 id="cloudTitle">BASIC Cloud Projects</h2></div><button class="cloud-close" id="cloudClose" type="button" aria-label="Close">×</button></div>

@@ -933,6 +933,24 @@ function redoSource() {
 
 const cloudOverlay = $('#cloudOverlay');
 const cloudStatus = $('#cloudStatus');
+const helpOverlay = $('#helpOverlay');
+const helpDialogBody = helpOverlay.querySelector('.help-dialog-body');
+let helpPreviousFocus = null;
+
+function openHelp() {
+  helpPreviousFocus = document.activeElement;
+  helpOverlay.hidden = false;
+  document.body.classList.add('help-open');
+  helpDialogBody.scrollTop = 0;
+  $('#closeHelp').focus();
+}
+
+function closeHelp() {
+  if (helpOverlay.hidden) return;
+  helpOverlay.hidden = true;
+  document.body.classList.remove('help-open');
+  if (helpPreviousFocus instanceof HTMLElement) helpPreviousFocus.focus();
+}
 
 function cloudMessage(message, error = false) {
   cloudStatus.textContent = message;
@@ -1321,6 +1339,12 @@ $('#renumberScope').onchange = event => {
   });
 };
 $('#cloudBtn').onclick = openCloud;
+$('#openHelp').onclick = openHelp;
+$('#closeHelp').onclick = closeHelp;
+$('#closeHelpBottom').onclick = closeHelp;
+helpOverlay.onclick = event => {
+  if (event.target === helpOverlay) closeHelp();
+};
 $('#cloudClose').onclick = closeCloud;
 cloudOverlay.onclick = event => {
   if (event.target === cloudOverlay) closeCloud();
@@ -1381,6 +1405,25 @@ window.addEventListener('beforeunload', event => {
   }
 });
 document.addEventListener('keydown', event => {
+  if (!helpOverlay.hidden) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeHelp();
+      return;
+    }
+    if (event.key === 'Tab') {
+      const focusable = [...helpOverlay.querySelectorAll('a[href],button:not([disabled])')];
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+  }
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
     event.preventDefault();
     event.shiftKey ? redoSource() : undoSource();

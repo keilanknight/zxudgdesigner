@@ -377,6 +377,9 @@ The BASIC preview provides:
 - Validation for line numbers, duplicates, unfinished strings, brackets,
   `IF` without `THEN`, and missing literal jump targets.
 - A searchable, plain-English Spectrum BASIC help panel.
+- A full in-page programmer's guide covering the editor, validation, recovery,
+  project formats, renumbering, variables, cloud publishing, QAOP testing, UDG
+  notation, troubleshooting, and links to the original BASIC documentation.
 - A token and byte view so curious users can inspect the stored program.
 - Real tokenised program TAP export with a selectable autostart line.
 - Plain-text `.bas` listing import and export. Import is allowed only when the

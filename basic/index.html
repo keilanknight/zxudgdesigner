@@ -30,11 +30,23 @@
 </section>
 <section class="stack">
   <section class="panel collapsible-panel">
-    <div class="panel-head"><h2>Variable Explorer</h2><button class="panel-toggle" type="button" aria-expanded="true" aria-label="Collapse Variable Explorer">−</button></div>
-    <div class="panel-content variable-panel">
-      <p class="mini">Variables stay visible here as you type. Enter a new name and choose Rename.</p>
-      <div class="variable-list" id="variableList"></div>
-      <div class="tool-message" id="variableMessage" role="status" aria-live="polite"></div>
+    <div class="panel-head"><h2>Validation results</h2><button class="panel-toggle" type="button" aria-expanded="true" aria-label="Collapse Validation results">−</button></div>
+    <div class="panel-content">
+      <div class="tabs"><button class="tab active" data-tab="problems">Problems</button><button class="tab" data-tab="tokenised">Tokenised</button><button class="tab" data-tab="keywords">Keywords</button></div>
+      <div class="tabbody active" id="problems"><div class="mini">Press Validate to check the program.</div></div>
+      <div class="tabbody" id="tokenised"><pre id="tokenisedOut">No validation yet.</pre></div>
+      <div class="tabbody" id="keywords"><pre id="keywordsOut">No keywords yet.</pre></div>
+    </div>
+  </section>
+  <section class="panel collapsible-panel">
+    <div class="panel-head"><h2>Export</h2><button class="panel-toggle" type="button" aria-expanded="true" aria-label="Collapse Export">−</button></div>
+    <div class="panel-content" style="padding:14px">
+      <div class="formgrid">
+        <div class="field"><label for="tapName">TAP name</label><input id="tapName" maxlength="10" value="BASIC"></div>
+        <div class="field"><label for="autostartLine">Autostart line</label><input id="autostartLine" value="10" inputmode="numeric"></div>
+      </div>
+      <div class="export-actions"><button class="btn primary" id="tapBtn">Download TAP</button><button class="btn" id="basBtn">Download BAS</button><button class="btn" id="copyBtn">Copy Listing</button></div>
+      <p class="mini">The TAP contains a genuine tokenised Spectrum BASIC program and can autostart at the selected line.</p>
     </div>
   </section>
   <section class="panel collapsible-panel collapsed">
@@ -53,23 +65,11 @@
     </div>
   </section>
   <section class="panel collapsible-panel">
-    <div class="panel-head"><h2>Validation results</h2><button class="panel-toggle" type="button" aria-expanded="true" aria-label="Collapse Validation results">−</button></div>
-    <div class="panel-content">
-      <div class="tabs"><button class="tab active" data-tab="problems">Problems</button><button class="tab" data-tab="tokenised">Tokenised</button><button class="tab" data-tab="keywords">Keywords</button></div>
-      <div class="tabbody active" id="problems"><div class="mini">Press Validate to check the program.</div></div>
-      <div class="tabbody" id="tokenised"><pre id="tokenisedOut">No validation yet.</pre></div>
-      <div class="tabbody" id="keywords"><pre id="keywordsOut">No keywords yet.</pre></div>
-    </div>
-  </section>
-  <section class="panel collapsible-panel">
-    <div class="panel-head"><h2>Export</h2><button class="panel-toggle" type="button" aria-expanded="true" aria-label="Collapse Export">−</button></div>
-    <div class="panel-content" style="padding:14px">
-      <div class="formgrid">
-        <div class="field"><label for="tapName">TAP name</label><input id="tapName" maxlength="10" value="BASIC"></div>
-        <div class="field"><label for="autostartLine">Autostart line</label><input id="autostartLine" value="10" inputmode="numeric"></div>
-      </div>
-      <div class="export-actions"><button class="btn primary" id="tapBtn">Download TAP</button><button class="btn" id="basBtn">Download BAS</button><button class="btn" id="copyBtn">Copy Listing</button></div>
-      <p class="mini">The TAP contains a genuine tokenised Spectrum BASIC program and can autostart at the selected line.</p>
+    <div class="panel-head"><h2>Variable Explorer</h2><button class="panel-toggle" type="button" aria-expanded="true" aria-label="Collapse Variable Explorer">−</button></div>
+    <div class="panel-content variable-panel">
+      <p class="mini">Variables stay visible here as you type. Enter a new name and choose Rename.</p>
+      <div class="variable-list" id="variableList"></div>
+      <div class="tool-message" id="variableMessage" role="status" aria-live="polite"></div>
     </div>
   </section>
   <section class="panel collapsible-panel collapsed">

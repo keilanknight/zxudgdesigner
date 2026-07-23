@@ -48,6 +48,10 @@
     </div>
     <div class="panel-content">
       <div id="editorBankTabs" class="bank-tabs" aria-label="UDG bank"></div>
+      <div class="bank-actions">
+        <button id="duplicateBank" type="button">Duplicate Bank</button>
+        <span id="bankStatus" class="status" aria-live="polite"></span>
+      </div>
       <div id="udgList" class="udg-list"></div>
     </div>
   </section>
@@ -77,6 +81,8 @@
               <button id="clearUdg" type="button">Clear</button>
               <button id="invertUdg" type="button">Invert</button>
               <button id="duplicateUdg" type="button">Duplicate to Next Empty</button>
+              <button id="copyUdg" type="button" title="Copy UDG (Ctrl/Cmd+C)">Copy UDG</button>
+              <button id="pasteUdg" type="button" title="Paste UDG (Ctrl/Cmd+V)" disabled>Paste UDG</button>
             </div>
           </div>
 
@@ -477,6 +483,11 @@
             animation frames, enemies, alternate themes, or special screens. A designed
             screen can mix tiles from all four banks.
           </p>
+          <p>
+            <strong>Duplicate Bank</strong> copies a complete bank—including every UDG's
+            saved colours—into the next unused bank. Banks already used by a screen are
+            protected and are not considered free.
+          </p>
 
           <h4>Drawing the 8×8 grid</h4>
           <ul>
@@ -484,6 +495,7 @@
             <li><strong>Touch or pen:</strong> tap an empty pixel to add it; tap a filled pixel to remove it.</li>
             <li><strong>Clear:</strong> empties the selected UDG. <strong>Invert:</strong> swaps every on/off pixel.</li>
             <li><strong>Duplicate:</strong> copies the design and its saved colours into the next empty UDG slot.</li>
+            <li><strong>Copy / Paste UDG:</strong> copies pixels and saved colours, ready to paste over any selected letter in any bank.</li>
             <li><strong>Mirror, rotate and shift:</strong> quickly create variants without redrawing.</li>
           </ul>
           <aside class="help-tip">
@@ -587,6 +599,8 @@ NEXT n</code></pre>
           <p>
             When you are not typing in a field, press <kbd>1</kbd>–<kbd>4</kbd> to choose
             a bank and <kbd>A</kbd>–<kbd>U</kbd> to choose that UDG letter. Use
+            <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>C</kbd> and <kbd>V</kbd> to copy and paste
+            the selected UDG. Use
             <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Z</kbd> for Undo and
             <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Y</kbd> (or Shift+Z) for Redo.
           </p>

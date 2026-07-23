@@ -42,6 +42,7 @@ The files use relative paths, so the editor can be hosted in a subdirectory as w
 The editor provides four banks of 21 UDGs, giving 84 available designs in total. Each bank contains the familiar Spectrum UDG positions A–U.
 
 - Switch banks with the Bank 1–4 buttons.
+- Duplicate a complete bank, including saved colours, into the next unused bank.
 - Press `1`–`4` when not typing in a form field to change the active screen-design bank.
 - Press `A`–`U` to select the corresponding UDG.
 - Every UDG remembers its own default INK, PAPER, and BRIGHT preview settings.
@@ -57,6 +58,7 @@ Select a bank and a letter, then draw directly on the enlarged 8×8 grid.
 - Right-drag erases pixels.
 - Clear or invert the complete graphic.
 - Duplicate it into the next empty position in the current bank.
+- Copy a UDG and its saved colours, then paste it over any letter in any bank. Use `Ctrl`/`Cmd`+`C` and `Ctrl`/`Cmd`+`V` when focus is not inside a form field.
 - Mirror horizontally or vertically.
 - Rotate left or right.
 - Shift one pixel up, down, left, or right.

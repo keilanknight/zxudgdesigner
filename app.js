@@ -94,6 +94,7 @@ let screenMode = "paint";
 let dragStart = null;
 let dragCurrent = null;
 let copiedRegion = null;
+let copiedUdg = null;
 let screenUndoState = null;
 let screenRedoState = null;
 let projectHasUnsavedChanges = false;
@@ -101,6 +102,7 @@ let recoveryTimer = null;
 
 const udgList = document.getElementById("udgList");
 const editorBankTabs = document.getElementById("editorBankTabs");
+const bankStatus = document.getElementById("bankStatus");
 const screenUdgList = document.getElementById("screenUdgList");
 const screenBankTabs = document.getElementById("screenBankTabs");
 const editor = document.getElementById("editor");
@@ -138,6 +140,7 @@ const helpOverlay = document.getElementById("helpOverlay");
 const closeHelpButton = document.getElementById("closeHelp");
 const closeHelpBottomButton = document.getElementById("closeHelpBottom");
 const helpDialogBody = helpOverlay.querySelector(".help-dialog-body");
+const pasteUdgButton = document.getElementById("pasteUdg");
 let helpPreviousFocus = null;
 
 function blankGrid() {
@@ -194,6 +197,13 @@ function showStatus(message) {
       status.textContent = "";
     }
   }, 1700);
+}
+
+function showBankStatus(message) {
+  bankStatus.textContent = message;
+  window.setTimeout(() => {
+    if (bankStatus.textContent === message) bankStatus.textContent = "";
+  }, 2400);
 }
 
 function buildColourSelectors() {
@@ -940,6 +950,100 @@ projectFileInput.addEventListener("change", () => {
   openProjectFile(projectFileInput.files[0]);
 });
 
+function bankHasCustomContent(bankIndex) {
+  const hasPixels = udgBanks[bankIndex].some((grid) =>
+    grid.some((row) => row.some((pixel) => pixel !== 0))
+  );
+  const hasCustomColours = udgColourBanks[bankIndex].some((colours) =>
+    colours.ink !== "White" ||
+    colours.paper !== "Black" ||
+    colours.bright !== true
+  );
+
+  return hasPixels || hasCustomColours;
+}
+
+function bankIsUsedByScreen(bankIndex) {
+  return screens.some((screenObject) =>
+    screenObject.activeBank === bankIndex ||
+    screenObject.cells.some((row) =>
+      row.some((cell) => cell !== null && cell.bank === bankIndex)
+    )
+  );
+}
+
+function bankIsFree(bankIndex) {
+  return !bankHasCustomContent(bankIndex) && !bankIsUsedByScreen(bankIndex);
+}
+
+function duplicateSelectedBank() {
+  if (!bankHasCustomContent(selectedBank)) {
+    showBankStatus("Current bank is empty");
+    return;
+  }
+
+  let targetBank = -1;
+
+  for (let offset = 1; offset < UDG_BANK_COUNT; offset++) {
+    const candidate = (selectedBank + offset) % UDG_BANK_COUNT;
+    if (bankIsFree(candidate)) {
+      targetBank = candidate;
+      break;
+    }
+  }
+
+  if (targetBank === -1) {
+    showBankStatus("No free UDG banks available");
+    return;
+  }
+
+  const sourceBank = selectedBank;
+  udgBanks[targetBank] = udgBanks[sourceBank].map((grid) => cloneGrid(grid));
+  udgColourBanks[targetBank] = udgColourBanks[sourceBank].map((colours) => ({
+    ...colours
+  }));
+  markProjectChanged();
+  selectBank(targetBank);
+  showBankStatus(
+    "Bank " + (sourceBank + 1) + " duplicated to Bank " + (targetBank + 1)
+  );
+}
+
+function copySelectedUdg() {
+  copiedUdg = {
+    sourceBank: selectedBank,
+    sourceUdg: selectedUdg,
+    grid: cloneGrid(udgs[selectedUdg]),
+    colours: { ...udgColours[selectedUdg] }
+  };
+  pasteUdgButton.disabled = false;
+  showStatus(
+    "Copied Bank " + (selectedBank + 1) + " UDG " +
+    String.fromCharCode(65 + selectedUdg)
+  );
+}
+
+function pasteCopiedUdg() {
+  if (!copiedUdg) {
+    showStatus("Copy a UDG first");
+    return;
+  }
+
+  udgs[selectedUdg] = cloneGrid(copiedUdg.grid);
+  udgColours[selectedUdg] = { ...copiedUdg.colours };
+  markProjectChanged();
+  refreshAll();
+  refreshPaintedCopies(selectedUdg);
+  showStatus(
+    "Pasted into Bank " + (selectedBank + 1) + " UDG " +
+    String.fromCharCode(65 + selectedUdg)
+  );
+}
+
+document.getElementById("duplicateBank").addEventListener("click", duplicateSelectedBank);
+document.getElementById("copyUdg").addEventListener("click", copySelectedUdg);
+pasteUdgButton.addEventListener("click", pasteCopiedUdg);
+
 document.getElementById("clearUdg").addEventListener("click", () => {
   replaceSelectedGrid(blankGrid());
 });
@@ -1147,6 +1251,30 @@ udgBrightSelect.addEventListener("change", () => {
   markProjectChanged();
   refreshTilePreview();
   refreshScreenUdgPreview(selectedUdg);
+});
+
+document.addEventListener("keydown", (event) => {
+  const target = event.target;
+  const isFormField = target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target.isContentEditable;
+
+  if (
+    helpOverlay.hidden &&
+    !isFormField &&
+    (event.ctrlKey || event.metaKey) &&
+    !event.altKey &&
+    !event.shiftKey
+  ) {
+    const key = event.key.toLowerCase();
+
+    if (key === "c" || key === "v") {
+      event.preventDefault();
+      if (key === "c") copySelectedUdg();
+      else pasteCopiedUdg();
+    }
+  }
 });
 
 document.addEventListener("keydown", (event) => {
@@ -1679,6 +1807,9 @@ function loadProjectData(project, options = {}) {
         Array.isArray(row) ? row.map((cell) => cloneCell(cell)) : []
       )
     : null;
+
+  copiedUdg = null;
+  pasteUdgButton.disabled = true;
 
   screenUndoState = null;
   screenRedoState = null;

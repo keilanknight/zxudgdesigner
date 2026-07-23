@@ -216,6 +216,18 @@ h2 {
   color: white;
 }
 
+.bank-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 10px;
+}
+
+.bank-actions .status {
+  margin: 0;
+}
+
 .udg-choice {
   width: 38px;
   height: 44px;

@@ -161,6 +161,7 @@ const sharedProjectPanel = document.getElementById("sharedProjectPanel");
 const sharedProjectName = document.getElementById("sharedProjectName");
 const sharedProjectOwner = document.getElementById("sharedProjectOwner");
 const sharedTapLink = document.getElementById("sharedTapLink");
+const sharedQaopLink = document.getElementById("sharedQaopLink");
 const openCloudAdminButton = document.getElementById("openCloudAdmin");
 const cloudAdminPanel = document.getElementById("cloudAdminPanel");
 const adminSummary = document.getElementById("adminSummary");
@@ -2618,6 +2619,20 @@ function makeCloudButton(label, handler, options = {}) {
   return button;
 }
 
+function qaopUrl(tapUrl) {
+  return "https://torinak.com/qaop/#l=" + tapUrl;
+}
+
+function makeCloudLink(label, href) {
+  const link = document.createElement("a");
+  link.className = "button-link";
+  link.href = href;
+  link.target = "_blank";
+  link.rel = "noopener";
+  link.textContent = label;
+  return link;
+}
+
 function updateCloudAccountUi() {
   const signedIn = cloudUser !== null;
   cloudSignedOut.hidden = signedIn;
@@ -2685,14 +2700,20 @@ function renderCloudProjects() {
     }
 
     if (project.published) {
-      actions.appendChild(makeCloudButton("Copy Share Link", () => copyCloudLink(project.shareUrl)));
-      const tapLink = document.createElement("a");
-      tapLink.className = "button-link";
-      tapLink.href = project.tapUrl;
-      tapLink.target = "_blank";
-      tapLink.rel = "noopener";
-      tapLink.textContent = "Open TAP";
-      actions.appendChild(tapLink);
+      actions.appendChild(
+        makeCloudButton(
+          "Copy Project Link",
+          () => copyCloudLink(project.shareUrl, "Project link copied")
+        )
+      );
+      actions.appendChild(
+        makeCloudButton(
+          "Copy TAP Link",
+          () => copyCloudLink(project.tapUrl, "TAP link copied")
+        )
+      );
+      actions.appendChild(makeCloudLink("Download TAP", project.tapUrl));
+      actions.appendChild(makeCloudLink("Try in QAOP", qaopUrl(project.tapUrl)));
       actions.appendChild(makeCloudButton("Unpublish", () => unpublishCloudProject(project.id)));
     }
 
@@ -2848,10 +2869,10 @@ async function deleteCloudProject(project) {
   }
 }
 
-async function copyCloudLink(url, showMessage = true) {
+async function copyCloudLink(url, message = "Link copied") {
   try {
     await navigator.clipboard.writeText(url);
-    if (showMessage) setCloudStatus("Share link copied");
+    if (message) setCloudStatus(message);
   } catch (error) {
     window.prompt("Copy this link:", url);
   }
@@ -2945,6 +2966,7 @@ async function loadSharedProject(slug) {
     sharedProjectName.textContent = response.meta.name;
     sharedProjectOwner.textContent = "Shared by " + response.meta.owner;
     sharedTapLink.href = response.meta.tapUrl;
+    sharedQaopLink.href = qaopUrl(response.meta.tapUrl);
     sharedProjectPanel.hidden = false;
     openCloud();
   } catch (error) {

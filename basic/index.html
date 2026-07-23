@@ -228,7 +228,10 @@
 
       <section id="basic-help-udgs" class="help-section">
         <h3><span>9</span> BASIC and user-defined graphics</h3>
-        <p>On a real Spectrum, UDGs A–U are entered in Graphics mode. Written listings often represent those special characters as <code>\A</code> through <code>\U</code>. The validator recognises that convention and explains it, but this first BASIC preview does not yet turn those sequences into UDG character bytes.</p>
+        <p>On a real Spectrum, UDGs A–U are entered in Graphics mode. In this editor, write <code>\A</code> through <code>\U</code> inside a string. TAP export converts each sequence into the real Spectrum UDG character byte from 144 to 164.</p>
+        <pre>10 PRINT AT 10,15;"\A"
+20 PRINT AT 12,11;"UDGS B TO U: \B\C\D ... \U"</pre>
+        <p>The readable backslash notation remains unchanged in JSON and BAS source. Only the tokenised TAP receives the special UDG bytes, ready to display whatever patterns are currently installed in the Spectrum's UDG definitions.</p>
         <p>Use the <strong>UDG Designer</strong> in the top navigation to draw graphics, store their colours, build screens and export its graphics TAP. A future Studio workflow can bring graphics data and BASIC source closer together; for now they remain separate projects so each tool stays predictable.</p>
       </section>
 

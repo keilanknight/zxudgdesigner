@@ -399,8 +399,8 @@ to `/basic/`.
 
 On a real Spectrum, UDGs A–U are entered in Graphics mode. Written listings
 often represent them as `\A` through `\U`; the BASIC editor documents and
-recognises that convention, but does not yet turn those sequences into UDG
-character bytes.
+converts those sequences to the real Spectrum UDG character bytes 144–164
+during tokenised TAP export. JSON and BAS source retain the readable notation.
 
 ## Release
 

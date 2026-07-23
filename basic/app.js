@@ -40,7 +40,7 @@ const HELP = {
   'INK / PAPER / BRIGHT': 'Spectrum attributes apply to 8×8 character cells. INK is foreground, PAPER background, and BRIGHT selects the brighter palette.',
   'POKE / PEEK': 'PEEK reads a memory byte and POKE writes one. Use them carefully: the Spectrum will faithfully let you poke something important!',
   'USR': 'RANDOMIZE USR address calls machine code. USR "A" gives the address of UDG A.',
-  'UDGs': 'On a Spectrum, enter Graphics mode and press A–U to type a UDG. Text listings often write these as \\A through \\U. This preview recognises that notation and warns about it, but does not convert it into a UDG byte yet.',
+  'UDGs': 'On a Spectrum, enter Graphics mode and press A–U to type a UDG. In this editor, write \\A through \\U inside a string; TAP export converts them to the real Spectrum UDG character bytes 144–164.',
   'REM': 'Everything after REM is a comment. Keywords and numbers inside it are stored as ordinary characters.',
   'TAP export': 'The exported TAP contains the real tokenised BASIC program. Set Autostart line to the line that should run automatically after loading.',
   'BAS files': 'Download BAS saves the numbered listing as readable text. To protect work already in the editor, a plain-text BAS file can be imported only after you choose Clear and leave the editor empty.',
@@ -236,6 +236,14 @@ function tokeniseBody(body) {
       offset++;
       continue;
     }
+    if (
+      character === '\\' &&
+      /^[A-U]$/i.test(body[offset + 1] || '')
+    ) {
+      bytes.push(0x90 + body[offset + 1].toUpperCase().charCodeAt(0) - 65);
+      offset += 2;
+      continue;
+    }
     if (!quoted) {
       const token = matchToken(body, offset);
       if (token) {
@@ -303,9 +311,6 @@ function parseProgram(text) {
       if (depth < 0) break;
     }
     if (depth !== 0) warnings.push({line: index + 1, message: 'Check the brackets on line ' + number + '.'});
-    if (/\\[A-U]\b/i.test(body)) {
-      warnings.push({line: index + 1, message: '\\A–\\U is recognised as UDG notation, but inline UDG export is not enabled yet.'});
-    }
     if (/\bIF\b/i.test(body) && !/\bTHEN\b/i.test(body)) {
       errors.push({line: index + 1, message: 'IF on line ' + number + ' needs THEN.'});
     }

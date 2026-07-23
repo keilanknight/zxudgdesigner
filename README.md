@@ -283,6 +283,10 @@ link passes the direct TAP URL to the QAOP JavaScript Spectrum emulator.
 **Update TAP** rebuilds an existing publication, while **Unpublish** removes its
 public project and TAP links without deleting the private save.
 
+Every publication increments a TAP revision query parameter (`.tap?v=2`, for
+example). TAP responses require cache revalidation, so QAOP and browsers do not
+silently reuse an older tape after **Update TAP**.
+
 The administrator view lists users, project counts, storage use, and recent
 projects. Administrators can disable or re-enable users and delete projects.
 Disabling a user also makes that user's published links unavailable.

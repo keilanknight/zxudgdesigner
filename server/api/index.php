@@ -188,7 +188,7 @@ if ($action === 'publish-project') {
     $statement = beta_db()->prepare(
         'UPDATE projects
          SET slug = ?, is_published = 1, tap_path = ?, tap_bytes = ?,
-             published_at = ?, updated_at = ?
+             tap_revision = tap_revision + 1, published_at = ?, updated_at = ?
          WHERE id = ? AND user_id = ?'
     );
     $statement->execute([
@@ -248,7 +248,8 @@ if ($action === 'public-project') {
                 : 'graphics',
             'name' => $record['name'],
             'owner' => $record['owner_name'],
-            'tapUrl' => beta_config()['base_url'] . '/t/' . $record['slug'] . '.tap',
+            'tapUrl' => beta_config()['base_url'] . '/t/' . $record['slug'] . '.tap?v=' .
+                (int) ($record['tap_revision'] ?? 0),
             'updatedAt' => $record['updated_at'],
         ],
     ]);

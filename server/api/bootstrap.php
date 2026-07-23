@@ -100,6 +100,7 @@ function beta_db(): PDO
             tap_path TEXT,
             project_bytes INTEGER NOT NULL DEFAULT 0,
             tap_bytes INTEGER NOT NULL DEFAULT 0,
+            tap_revision INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
             published_at TEXT,
@@ -108,15 +109,23 @@ function beta_db(): PDO
     );
     $projectColumns = $pdo->query('PRAGMA table_info(projects)')->fetchAll();
     $hasProjectType = false;
+    $hasTapRevision = false;
     foreach ($projectColumns as $column) {
         if (($column['name'] ?? '') === 'project_type') {
             $hasProjectType = true;
-            break;
+        }
+        if (($column['name'] ?? '') === 'tap_revision') {
+            $hasTapRevision = true;
         }
     }
     if (!$hasProjectType) {
         $pdo->exec(
             'ALTER TABLE projects ADD COLUMN project_type TEXT NOT NULL DEFAULT "graphics"'
+        );
+    }
+    if (!$hasTapRevision) {
+        $pdo->exec(
+            'ALTER TABLE projects ADD COLUMN tap_revision INTEGER NOT NULL DEFAULT 0'
         );
     }
     $pdo->exec(
@@ -608,6 +617,10 @@ function project_summary(array $record): array
         ? 'assembler'
         : 'graphics';
     $projectRoute = $type === 'assembler' ? '/assembler/' : '/';
+    $tapUrl = $published
+        ? $config['base_url'] . '/t/' . $record['slug'] . '.tap?v=' .
+            (int) ($record['tap_revision'] ?? 0)
+        : null;
     return [
         'id' => $record['id'],
         'type' => $type,
@@ -617,7 +630,7 @@ function project_summary(array $record): array
         'shareUrl' => $published
             ? $config['base_url'] . $projectRoute . '?project=' . $record['slug']
             : null,
-        'tapUrl' => $published ? $config['base_url'] . '/t/' . $record['slug'] . '.tap' : null,
+        'tapUrl' => $tapUrl,
         'projectBytes' => (int) $record['project_bytes'],
         'tapBytes' => (int) $record['tap_bytes'],
         'createdAt' => $record['created_at'],

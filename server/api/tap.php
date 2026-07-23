@@ -32,7 +32,8 @@ if (!is_file($path)) {
 header('Content-Type: application/octet-stream');
 header('Content-Length: ' . filesize($path));
 header('Content-Disposition: inline; filename="zxudg-' . $slug . '.tap"');
-header('Cache-Control: public, max-age=31536000, immutable');
+header('Cache-Control: public, no-cache, must-revalidate');
+header('ETag: "' . hash_file('sha256', $path) . '"');
 header('Access-Control-Allow-Origin: *');
 header('X-Content-Type-Options: nosniff');
 readfile($path);

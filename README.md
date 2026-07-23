@@ -225,7 +225,7 @@ The exported loader reserves memory with `CLEAR 49999`, loads the package at `50
 ├── index.html       HTML structure
 ├── styles.css       Development stylesheet
 ├── app.js           Editor, persistence, export, assembler, and renderer logic
-├── assembler/       Standalone Z80 assembler Studio workspace
+├── assembler/       Z80 assembler HTML, stylesheet, and application source
 ├── server/          Cloud API and private configuration template
 ├── dist/            Minified website build
 └── README.md
@@ -325,6 +325,15 @@ The `feature/spectrum-studio` branch introduces a separate assembler workspace
 at `/assembler/`. It deliberately remains a separate page so the graphics and
 assembly interfaces stay focused and each tool loads only what it needs. Shared
 navigation makes them feel like parts of the same Spectrum Studio.
+
+Its source is deliberately split by responsibility:
+
+- `assembler/index.html` contains the workspace structure.
+- `assembler/styles.css` contains assembler-specific presentation.
+- `assembler/app.js` contains the assembler, persistence, cloud, TAP, and UI logic.
+
+The production build minifies and versions those assets independently from the
+graphics editor, so visiting one tool does not download the other tool's code.
 
 The preview assembler currently provides:
 

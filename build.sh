@@ -32,6 +32,12 @@ mkdir -p dist/api
 cp server/api/bootstrap.php server/api/index.php server/api/tap.php server/api/.htaccess dist/api/
 mkdir -p dist/assembler
 cp assembler/index.html dist/assembler/index.html
+find dist/assembler -maxdepth 1 -type f \( \
+  -name 'app.js' -o \
+  -name 'styles.css' -o \
+  -name 'app-*.js' -o \
+  -name 'styles-*.css' \
+\) -delete
 
 find dist -maxdepth 1 -type f \( \
   -name 'app.js' -o \
@@ -47,6 +53,8 @@ BUILD_VERSION="$build_version" perl -0pi -e '
 ' dist/index.html
 
 BUILD_VERSION="$build_version" perl -0pi -e '
+  s/styles\.css\?v=dev/styles-$ENV{BUILD_VERSION}.css/g;
+  s/app\.js\?v=dev/app-$ENV{BUILD_VERSION}.js/g;
   s/Version dev/Version $ENV{BUILD_VERSION}/g;
 ' dist/assembler/index.html
 
@@ -56,6 +64,15 @@ npx --yes terser app.js \
   --mangle \
   --ecma 2017 \
   --output "dist/app-$build_version.js"
+
+npx --yes clean-css-cli \
+  -o "dist/assembler/styles-$build_version.css" \
+  assembler/styles.css
+npx --yes terser assembler/app.js \
+  --compress passes=3,unsafe_arrows=true \
+  --mangle \
+  --ecma 2017 \
+  --output "dist/assembler/app-$build_version.js"
 
 printf '%s\n' "$build_version" > VERSION
 

@@ -75,7 +75,7 @@ if ($action === 'save-project') {
     if (!is_array($project)) {
         api_error('Project data is required.');
     }
-    validate_project($project);
+    $projectType = validate_project($project);
     $name = clean_project_name($request['name'] ?? ($project['projectName'] ?? ''));
     $project['projectName'] = $name;
     $project['savedAt'] = gmdate('c');
@@ -120,12 +120,13 @@ if ($action === 'save-project') {
     if ($isNew) {
         $statement = $pdo->prepare(
             'INSERT INTO projects
-             (id, user_id, name, project_path, project_bytes, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?)'
+             (id, user_id, project_type, name, project_path, project_bytes, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $statement->execute([
             $projectId,
             (int) $user['id'],
+            $projectType,
             $name,
             $relativePath,
             strlen($json),
@@ -134,9 +135,11 @@ if ($action === 'save-project') {
         ]);
     } else {
         $statement = $pdo->prepare(
-            'UPDATE projects SET name = ?, project_bytes = ?, updated_at = ? WHERE id = ?'
+            'UPDATE projects
+             SET project_type = ?, name = ?, project_bytes = ?, updated_at = ?
+             WHERE id = ?'
         );
-        $statement->execute([$name, strlen($json), $now, $projectId]);
+        $statement->execute([$projectType, $name, strlen($json), $now, $projectId]);
     }
 
     $record = project_record($projectId, (int) $user['id']);
@@ -240,6 +243,9 @@ if ($action === 'public-project') {
         'ok' => true,
         'project' => load_project_json($record),
         'meta' => [
+            'type' => ($record['project_type'] ?? 'graphics') === 'assembler'
+                ? 'assembler'
+                : 'graphics',
             'name' => $record['name'],
             'owner' => $record['owner_name'],
             'tapUrl' => beta_config()['base_url'] . '/t/' . $record['slug'] . '.tap',

@@ -332,11 +332,22 @@ The preview assembler currently provides:
 - Code-only TAP export.
 - A self-running TAP containing a short Sinclair BASIC loader and the assembled
   code block. This is the default and most useful option for emulator testing.
+- Downloadable JSON assembler projects, automatic browser recovery,
+  unsaved-change protection, and source Undo/Redo.
+- Private assembler cloud projects under the same Google account used by the
+  graphics editor.
+- Published read-only project links, direct TAP links, and one-click QAOP
+  emulator testing.
 
-Assembler cloud projects and direct QAOP launching are intentionally deferred
-until the assembler engine and its TAP output have been tested. The longer-term
-plan is to share project storage, authentication and Spectrum TAP utilities
-without coupling the two editor interfaces together.
+Graphics and assembler projects have separate validated formats and appear only
+in their matching editor. Existing graphics cloud rows are migrated safely to
+the `graphics` type; assembler saves use `assembler`. Published assembler links
+route to `/assembler/`, and publishing always builds a self-running loader TAP
+for predictable emulator testing.
+
+The longer-term plan is to share more Spectrum TAP utilities and allow graphics
+data to be passed into assembly without coupling the two editor interfaces
+together.
 
 ## Release
 

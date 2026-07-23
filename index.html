@@ -10,12 +10,21 @@
   <link rel="stylesheet" href="styles.css?v=dev">
 </head>
 <body>
-  <div class="title-row">
-    <h1 class="site-title">
-      <span class="spectrum-logo" aria-hidden="true"></span>
-      <span>ZX Spectrum UDG Graphics Editor</span>
-    </h1>
-
+  <header class="studio-header">
+    <div class="studio-header-row">
+      <div>
+        <h1 class="site-title">
+          <span class="spectrum-logo" aria-hidden="true"></span>
+          <span>ZX Spectrum Studio</span>
+        </h1>
+        <p class="studio-subtitle">UDG Designer — create graphics, screens and runnable Spectrum TAP files.</p>
+      </div>
+      <nav class="studio-navigation" aria-label="Studio tools">
+        <a class="studio-nav-link current" href="./" aria-current="page">UDG Designer</a>
+        <a class="studio-nav-link" href="assembler/">Assembler</a>
+        <span class="studio-badge">STUDIO PREVIEW</span>
+      </nav>
+    </div>
     <div class="project-bar">
       <label class="project-name-field">
         Project name
@@ -26,7 +35,6 @@
       <button id="saveProject" type="button">Save Project</button>
       <button id="loadProject" type="button">Load Project</button>
       <button id="openCloud" type="button">Cloud Projects</button>
-      <a class="studio-nav-link" href="assembler/">Assembler</a>
       <button
         id="openHelp"
         class="help-button"
@@ -41,7 +49,7 @@
       </button>
       <input id="projectFile" class="hidden-file-input" type="file" accept=".json,application/json">
     </div>
-  </div>
+  </header>
 
   <section class="panel collapsible-panel" data-panel-name="UDG Palette">
     <div class="panel-header">
@@ -719,6 +727,24 @@ RANDOMIZE USR 50016</code></pre>
             <li>Use <strong>Copy BASIC DATA</strong> or <strong>Copy hex bytes</strong> when another program needs the assembled bytes.</li>
             <li>For a TAP that can load and run by itself, keep <strong>BASIC loader + code</strong> selected and choose <strong>Download TAP</strong>.</li>
           </ol>
+          <h4>Saving and undoing</h4>
+          <p>
+            Assembler projects have the same safety net as graphics projects.
+            <strong>Save Project</strong> downloads editable source and export settings
+            as JSON; <strong>Load Project</strong> restores it. The latest project is
+            also recovered from this browser after a refresh, and the browser warns
+            before leaving with unsaved changes. Undo and Redo buttons—and the familiar
+            keyboard shortcuts—step through source edits.
+          </p>
+          <h4>Assembler projects in the cloud</h4>
+          <p>
+            Cloud assembler projects remain separate from UDG projects but use the
+            same Google account. Save privately, update the current cloud copy, or
+            publish it. Publishing always builds the self-running BASIC-loader TAP,
+            then provides a project link, a direct TAP link and <strong>Try in
+            QAOP</strong>. A shared project opens as a new editable copy; it never
+            grants permission to overwrite the owner's project.
+          </p>
           <p>
             The Assembly results, Export and Instruction help panels can each be
             collapsed with their <strong>−</strong> button. Results stay within a
@@ -726,9 +752,9 @@ RANDOMIZE USR 50016</code></pre>
             of reach. Instruction help begins folded away until you need it.
           </p>
           <aside class="help-note">
-            This is an early Studio preview. Local and cloud assembler projects,
-            direct QAOP launching, and links between graphics and assembly will arrive
-            after the assembler and its generated TAP files have been thoroughly tested.
+            Graphics and assembler saves are deliberately distinct for now. Passing
+            UDG data into assembly and combining several Studio components into one
+            build will come later, after each tool is solid on its own.
           </aside>
         </section>
 

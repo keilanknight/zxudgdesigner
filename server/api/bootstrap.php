@@ -92,6 +92,7 @@ function beta_db(): PDO
         'CREATE TABLE IF NOT EXISTS projects (
             id TEXT PRIMARY KEY,
             user_id INTEGER NOT NULL,
+            project_type TEXT NOT NULL DEFAULT "graphics",
             name TEXT NOT NULL,
             slug TEXT UNIQUE,
             is_published INTEGER NOT NULL DEFAULT 0,
@@ -105,6 +106,19 @@ function beta_db(): PDO
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )'
     );
+    $projectColumns = $pdo->query('PRAGMA table_info(projects)')->fetchAll();
+    $hasProjectType = false;
+    foreach ($projectColumns as $column) {
+        if (($column['name'] ?? '') === 'project_type') {
+            $hasProjectType = true;
+            break;
+        }
+    }
+    if (!$hasProjectType) {
+        $pdo->exec(
+            'ALTER TABLE projects ADD COLUMN project_type TEXT NOT NULL DEFAULT "graphics"'
+        );
+    }
     $pdo->exec(
         'CREATE TABLE IF NOT EXISTS rate_limits (
             client_key TEXT PRIMARY KEY,
@@ -380,12 +394,60 @@ function valid_colour(mixed $value): bool
     );
 }
 
-function validate_project(array $project): void
+function project_type(array $project): string
 {
-    if (($project['format'] ?? '') !== 'zx-spectrum-udg-editor-project') {
-        api_error('This is not a ZX Spectrum UDG Editor project.');
+    $format = (string) ($project['format'] ?? '');
+    if ($format === 'zx-spectrum-udg-editor-project') {
+        return 'graphics';
     }
+    if ($format === 'zx-spectrum-z80-assembler-project') {
+        return 'assembler';
+    }
+    api_error('This is not a supported ZX Spectrum Studio project.');
+}
 
+function validate_project(array $project): string
+{
+    $type = project_type($project);
+    if ($type === 'assembler') {
+        validate_assembler_project($project);
+        return $type;
+    }
+    validate_graphics_project($project);
+    return $type;
+}
+
+function validate_assembler_project(array $project): void
+{
+    if (
+        !isset($project['source']) ||
+        !is_string($project['source']) ||
+        strlen($project['source']) > 524288
+    ) {
+        api_error('The assembler source is invalid or too large.');
+    }
+    if (
+        isset($project['entryAddress']) &&
+        (!is_string($project['entryAddress']) || strlen($project['entryAddress']) > 80)
+    ) {
+        api_error('The assembler entry address is invalid.');
+    }
+    if (
+        isset($project['tapName']) &&
+        (!is_string($project['tapName']) || strlen($project['tapName']) > 10)
+    ) {
+        api_error('The assembler TAP name is invalid.');
+    }
+    if (
+        isset($project['tapMode']) &&
+        !in_array($project['tapMode'], ['code', 'loader'], true)
+    ) {
+        api_error('The assembler TAP mode is invalid.');
+    }
+}
+
+function validate_graphics_project(array $project): void
+{
     $banks = $project['udgBanks'] ?? null;
     if (!is_array($banks) || count($banks) < 1 || count($banks) > ZXUDG_UDG_BANKS) {
         api_error('The project contains invalid UDG banks.');
@@ -542,12 +604,19 @@ function project_summary(array $record): array
 {
     $config = beta_config();
     $published = (int) $record['is_published'] === 1;
+    $type = ($record['project_type'] ?? 'graphics') === 'assembler'
+        ? 'assembler'
+        : 'graphics';
+    $projectRoute = $type === 'assembler' ? '/assembler/' : '/';
     return [
         'id' => $record['id'],
+        'type' => $type,
         'name' => $record['name'],
         'published' => $published,
         'slug' => $published ? $record['slug'] : null,
-        'shareUrl' => $published ? $config['base_url'] . '/?project=' . $record['slug'] : null,
+        'shareUrl' => $published
+            ? $config['base_url'] . $projectRoute . '?project=' . $record['slug']
+            : null,
         'tapUrl' => $published ? $config['base_url'] . '/t/' . $record['slug'] . '.tap' : null,
         'projectBytes' => (int) $record['project_bytes'],
         'tapBytes' => (int) $record['tap_bytes'],
@@ -596,8 +665,8 @@ function validate_tap(string $tap): void
         $offset += $blockLength;
         $blocks++;
     }
-    if ($blocks < 4 || $offset !== $length) {
-        api_error('The TAP file does not contain a complete loader and package.');
+    if ($blocks < 2 || $offset !== $length) {
+        api_error('The TAP file does not contain a complete tape package.');
     }
 }
 

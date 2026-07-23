@@ -2727,7 +2727,7 @@ async function refreshCloudProjects() {
   if (!cloudUser) return;
   try {
     const response = await cloudApi("projects");
-    cloudProjects = response.projects;
+    cloudProjects = response.projects.filter((project) => project.type === "graphics");
     renderCloudProjects();
   } catch (error) {
     setCloudStatus(error.message, true);
@@ -2962,6 +2962,9 @@ async function signOutCloud() {
 async function loadSharedProject(slug) {
   try {
     const response = await cloudApi("public-project", { query: { slug } });
+    if (response.meta.type !== "graphics") {
+      throw new Error("This shared link belongs to a different Studio tool.");
+    }
     sharedCloudProject = response;
     sharedProjectName.textContent = response.meta.name;
     sharedProjectOwner.textContent = "Shared by " + response.meta.owner;
@@ -3064,6 +3067,7 @@ function renderAdminSummary(users, projects) {
     const meta = document.createElement("div");
     meta.className = "admin-meta";
     meta.textContent =
+      (project.type === "assembler" ? "Assembler" : "Graphics") + " · " +
       project.ownerName + " · " + project.ownerEmail + " · " +
       (project.published ? "Published" : "Private") + " · " +
       formatCloudBytes(project.projectBytes + project.tapBytes);

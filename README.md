@@ -379,6 +379,8 @@ The BASIC preview provides:
 - A searchable, plain-English Spectrum BASIC help panel.
 - A token and byte view so curious users can inspect the stored program.
 - Real tokenised program TAP export with a selectable autostart line.
+- Plain-text `.bas` listing import and export. Import is allowed only when the
+  editor is empty, preventing an existing listing from being overwritten.
 - JSON project download/upload and private Google-authenticated cloud saves.
 - Published project and direct TAP links, plus one-click testing in QAOP.
 

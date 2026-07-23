@@ -14,10 +14,12 @@
     <button class="btn" id="newProject">New Project</button>
     <button class="btn" id="saveProject">Save Project</button>
     <button class="btn" id="loadProject">Load Project</button>
+    <button class="btn" id="importBas">Import BAS</button>
     <button class="btn" id="undoBtn">Undo</button>
     <button class="btn" id="redoBtn">Redo</button>
     <button class="btn primary" id="cloudBtn">Cloud Projects</button>
     <input class="hidden" id="projectFile" type="file" accept=".json,application/json">
+    <input class="hidden" id="basFile" type="file" accept=".bas,text/plain">
   </div>
 </header>
 <main>
@@ -43,7 +45,7 @@
         <div class="field"><label for="tapName">TAP name</label><input id="tapName" maxlength="10" value="BASIC"></div>
         <div class="field"><label for="autostartLine">Autostart line</label><input id="autostartLine" value="10" inputmode="numeric"></div>
       </div>
-      <div class="export-actions"><button class="btn primary" id="tapBtn">Download TAP</button><button class="btn" id="copyBtn">Copy Listing</button></div>
+      <div class="export-actions"><button class="btn primary" id="tapBtn">Download TAP</button><button class="btn" id="basBtn">Download BAS</button><button class="btn" id="copyBtn">Copy Listing</button></div>
       <p class="mini">The TAP contains a genuine tokenised Spectrum BASIC program and can autostart at the selected line.</p>
     </div>
   </section>

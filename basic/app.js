@@ -43,6 +43,7 @@ const HELP = {
   'UDGs': 'On a Spectrum, enter Graphics mode and press A–U to type a UDG. Text listings often write these as \\A through \\U. This preview recognises that notation and warns about it, but does not convert it into a UDG byte yet.',
   'REM': 'Everything after REM is a comment. Keywords and numbers inside it are stored as ordinary characters.',
   'TAP export': 'The exported TAP contains the real tokenised BASIC program. Set Autostart line to the line that should run automatically after loading.',
+  'BAS files': 'Download BAS saves the numbered listing as readable text. To protect work already in the editor, a plain-text BAS file can be imported only after you choose Clear and leave the editor empty.',
   '48K compatibility': 'This first editor targets classic 48K Sinclair BASIC. 128 BASIC adds SPECTRUM and PLAY and reduces the normally available UDG letters.'
 };
 const example = `10 BORDER 1: PAPER 0: INK 7: CLS
@@ -235,10 +236,12 @@ function tokeniseBody(body) {
     if (!quoted) {
       const token = matchToken(body, offset);
       if (token) {
+        if (bytes[bytes.length - 1] === 0x20) bytes.pop();
         bytes.push(token.byte);
         keywords.push(token.keyword);
         offset += token.length;
         if (token.keyword === 'REM') remark = true;
+        if (body[offset] === ' ') offset++;
         continue;
       }
       const numberMatch = body.slice(offset).match(
@@ -468,6 +471,44 @@ function downloadTap() {
   } catch (error) {
     alert(error.message);
   }
+}
+
+function basicFileName() {
+  const name = ($('#projectName').value.trim() || $('#tapName').value.trim() || 'basic')
+    .replace(/[^a-z0-9_-]+/gi, '-')
+    .replace(/^-|-$/g, '');
+  return (name || 'basic') + '.bas';
+}
+
+function downloadBas() {
+  const listing = source.value.replace(/\r\n?/g, '\n');
+  download(new TextEncoder().encode(listing), basicFileName(), 'text/plain;charset=utf-8');
+}
+
+function importBasFile(file) {
+  if (!file) return;
+  if (source.value.trim() !== '') {
+    alert('BAS import is available only when the BASIC editor is empty. Clear the listing first so existing work cannot be overwritten.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const listing = String(reader.result).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+      if (listing.includes('\0')) {
+        throw Error('This BAS file appears to be binary. This preview imports plain-text, line-numbered BAS listings.');
+      }
+      setSource(listing);
+      const result = validateProgram();
+      if (result.errors.length) {
+        alert('The BAS listing was imported, but the validator found ' + result.errors.length + ' issue' + (result.errors.length === 1 ? '' : 's') + '.');
+      }
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+  reader.onerror = () => alert('The BAS file could not be read.');
+  reader.readAsText(file);
 }
 
 function saveProjectFile() {
@@ -885,8 +926,9 @@ source.addEventListener('keydown', event => {
 });
 $('#validateBtn').onclick = validateProgram;
 $('#exampleBtn').onclick = () => setSource(example);
-$('#clearBtn').onclick = () => setSource('10 REM MY SPECTRUM PROGRAM\n');
+$('#clearBtn').onclick = () => setSource('');
 $('#tapBtn').onclick = downloadTap;
+$('#basBtn').onclick = downloadBas;
 $('#copyBtn').onclick = async () => {
   await navigator.clipboard.writeText(source.value);
   alert('BASIC listing copied.');
@@ -894,8 +936,19 @@ $('#copyBtn').onclick = async () => {
 $('#newProject').onclick = newProject;
 $('#saveProject').onclick = saveProjectFile;
 $('#loadProject').onclick = () => $('#projectFile').click();
+$('#importBas').onclick = () => {
+  if (source.value.trim() !== '') {
+    alert('BAS import is available only when the BASIC editor is empty. Clear the listing first so existing work cannot be overwritten.');
+    return;
+  }
+  $('#basFile').click();
+};
 $('#projectFile').onchange = event => {
   loadProjectFile(event.target.files[0]);
+  event.target.value = '';
+};
+$('#basFile').onchange = event => {
+  importBasFile(event.target.files[0]);
   event.target.value = '';
 };
 $('#undoBtn').onclick = undoSource;

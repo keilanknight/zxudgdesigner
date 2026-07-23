@@ -326,6 +326,8 @@ The preview assembler currently provides:
 
 - A two-pass Z80 assembler with labels, symbols and common directives.
 - Clickable errors, a generated listing and a symbol table.
+- Fixed-height scrolling results plus collapsible Results, Export, and
+  Instruction Help panels.
 - Decimal BASIC DATA and hexadecimal byte export.
 - Code-only TAP export.
 - A self-running TAP containing a short Sinclair BASIC loader and the assembled

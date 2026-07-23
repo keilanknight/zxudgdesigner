@@ -382,6 +382,8 @@ The BASIC preview provides:
   notation, troubleshooting, and links to the original BASIC documentation.
 - A token and byte view so curious users can inspect the stored program.
 - Real tokenised program TAP export with a selectable autostart line.
+- Correct Spectrum `BIN` numeric encoding, including validation of binary digits
+  and the 16-bit integer range used for readable graphics data.
 - Plain-text `.bas` listing import and export. Import is allowed only when the
   editor is empty, preventing an existing listing from being overwritten.
 - Transactional whole-program and range renumbering. The editor rejects

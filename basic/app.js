@@ -39,6 +39,7 @@ const HELP = {
   'PLOT / DRAW / CIRCLE': 'PLOT x,y places a pixel; DRAW dx,dy draws relative to it; CIRCLE x,y,r draws a circle.',
   'INK / PAPER / BRIGHT': 'Spectrum attributes apply to 8×8 character cells. INK is foreground, PAPER background, and BRIGHT selects the brighter palette.',
   'POKE / PEEK': 'PEEK reads a memory byte and POKE writes one. Use them carefully: the Spectrum will faithfully let you poke something important!',
+  'BIN': 'Write a binary number using only 0 and 1, such as BIN 11111111 for 255. TAP export stores the correct numeric value while keeping the readable binary digits in the listing.',
   'USR': 'RANDOMIZE USR address calls machine code. USR "A" gives the address of UDG A.',
   'UDGs': 'On a Spectrum, enter Graphics mode and press A–U to type a UDG. In this editor, write \\A through \\U inside a string; TAP export converts them to the real Spectrum UDG character bytes 144–164.',
   'REM': 'Everything after REM is a comment. Keywords and numbers inside it are stored as ordinary characters.',
@@ -253,6 +254,23 @@ function tokeniseBody(body) {
         offset += token.length;
         if (token.keyword === 'REM') remark = true;
         if (body[offset] === ' ') offset++;
+        if (token.keyword === 'BIN') {
+          while (body[offset] === ' ') {
+            bytes.push(0x20);
+            offset++;
+          }
+          const digits = body.slice(offset).match(/^\d+/)?.[0] || '';
+          if (!digits || !/^[01]+$/.test(digits)) {
+            throw Error('BIN must be followed by a binary number containing only 0 and 1.');
+          }
+          const value = parseInt(digits, 2);
+          if (digits.length > 16 || value > 65535) {
+            throw Error('BIN value is outside the Spectrum integer range.');
+          }
+          for (const digit of digits) bytes.push(spectrumChar(digit));
+          bytes.push(0x0E, ...spectrumNumber(value));
+          offset += digits.length;
+        }
         continue;
       }
       const numberMatch = body.slice(offset).match(

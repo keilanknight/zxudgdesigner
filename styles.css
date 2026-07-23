@@ -443,6 +443,23 @@ button {
   cursor: pointer;
 }
 
+.studio-nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  border: 2px solid #444;
+  background: #eee;
+  color: #171717;
+  padding: 8px 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.studio-nav-link:hover,
+.studio-nav-link:focus-visible {
+  background: #fff;
+}
+
 button.active {
   background: #222222;
   color: white;

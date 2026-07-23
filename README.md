@@ -225,6 +225,8 @@ The exported loader reserves memory with `CLEAR 49999`, loads the package at `50
 ├── index.html       HTML structure
 ├── styles.css       Development stylesheet
 ├── app.js           Editor, persistence, export, assembler, and renderer logic
+├── assembler/       Standalone Z80 assembler Studio workspace
+├── server/          Cloud API and private configuration template
 ├── dist/            Minified website build
 └── README.md
 ```
@@ -312,6 +314,27 @@ https://keilanknight.com
 No Google password or access token is stored. The verified Google account ID is
 used as the stable identity; the accompanying name, email address, and profile
 picture are stored for account display and administration.
+
+## Spectrum Studio assembler preview
+
+The `feature/spectrum-studio` branch introduces a separate assembler workspace
+at `/assembler/`. It deliberately remains a separate page so the graphics and
+assembly interfaces stay focused and each tool loads only what it needs. Shared
+navigation makes them feel like parts of the same Spectrum Studio.
+
+The preview assembler currently provides:
+
+- A two-pass Z80 assembler with labels, symbols and common directives.
+- Clickable errors, a generated listing and a symbol table.
+- Decimal BASIC DATA and hexadecimal byte export.
+- Code-only TAP export.
+- A self-running TAP containing a short Sinclair BASIC loader and the assembled
+  code block. This is the default and most useful option for emulator testing.
+
+Assembler cloud projects and direct QAOP launching are intentionally deferred
+until the assembler engine and its TAP output have been tested. The longer-term
+plan is to share project storage, authentication and Spectrum TAP utilities
+without coupling the two editor interfaces together.
 
 ## Release
 

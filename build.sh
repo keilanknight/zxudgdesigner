@@ -30,6 +30,8 @@ mkdir -p dist
 cp index.html dist/index.html
 mkdir -p dist/api
 cp server/api/bootstrap.php server/api/index.php server/api/tap.php server/api/.htaccess dist/api/
+mkdir -p dist/assembler
+cp assembler/index.html dist/assembler/index.html
 
 find dist -maxdepth 1 -type f \( \
   -name 'app.js' -o \
@@ -43,6 +45,10 @@ BUILD_VERSION="$build_version" perl -0pi -e '
   s/app\.js\?v=dev/app-$ENV{BUILD_VERSION}.js/g;
   s/Version dev/Version $ENV{BUILD_VERSION}/g;
 ' dist/index.html
+
+BUILD_VERSION="$build_version" perl -0pi -e '
+  s/Version dev/Version $ENV{BUILD_VERSION}/g;
+' dist/assembler/index.html
 
 npx --yes clean-css-cli -o "dist/styles-$build_version.css" styles.css
 npx --yes terser app.js \
@@ -72,5 +78,16 @@ printf '%s\n' \
 printf '%s\n' \
   '/index.html' \
   '  Cache-Control: no-cache, no-store, must-revalidate' > dist/_headers
+
+printf '%s\n' \
+  '<IfModule mod_headers.c>' \
+  '  <Files "index.html">' \
+  '    Header set Cache-Control "no-cache, no-store, must-revalidate"' \
+  '    Header set Pragma "no-cache"' \
+  '    Header set Expires "0"' \
+  '  </Files>' \
+  '  Header set X-Content-Type-Options "nosniff"' \
+  '  Header set Referrer-Policy "same-origin"' \
+  '</IfModule>' > dist/assembler/.htaccess
 
 echo "Built dist version $build_version"

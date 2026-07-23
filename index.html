@@ -26,6 +26,7 @@
       <button id="saveProject" type="button">Save Project</button>
       <button id="loadProject" type="button">Load Project</button>
       <button id="openCloud" type="button">Cloud Projects</button>
+      <a class="studio-nav-link" href="assembler/">Assembler</a>
       <button
         id="openHelp"
         class="help-button"
@@ -423,6 +424,7 @@
           <a href="#help-tools">Screen tools</a>
           <a href="#help-tap">TAP export</a>
           <a href="#help-cloud">Cloud projects</a>
+          <a href="#help-assembler">Assembler preview</a>
           <a href="#help-tips">Ideas and tips</a>
         </nav>
 
@@ -704,8 +706,28 @@ RANDOMIZE USR 50016</code></pre>
           </p>
         </section>
 
+        <section id="help-assembler" class="help-section">
+          <h3><span>10</span> The Assembler preview</h3>
+          <p>
+            Choose <strong>Assembler</strong> in the top toolbar to open the first
+            ZX Spectrum Studio companion tool. It has its own uncluttered workspace,
+            while the UDG Designer remains exactly where you left it in this browser.
+          </p>
+          <ol class="help-steps">
+            <li>Write or paste Z80 source into the editor. The supplied example is ready to assemble.</li>
+            <li>Choose <strong>Assemble</strong> to see errors, a memory-address listing and the symbol table.</li>
+            <li>Use <strong>Copy BASIC DATA</strong> or <strong>Copy hex bytes</strong> when another program needs the assembled bytes.</li>
+            <li>For a TAP that can load and run by itself, keep <strong>BASIC loader + code</strong> selected and choose <strong>Download TAP</strong>.</li>
+          </ol>
+          <aside class="help-note">
+            This is an early Studio preview. Local and cloud assembler projects,
+            direct QAOP launching, and links between graphics and assembly will arrive
+            after the assembler and its generated TAP files have been thoroughly tested.
+          </aside>
+        </section>
+
         <section id="help-tips" class="help-section">
-          <h3><span>10</span> Good things to try</h3>
+          <h3><span>11</span> Good things to try</h3>
           <ul>
             <li>Build a title screen with a tiled border, logo pieces and menu icons.</li>
             <li>Design a room in Bank 1, then use Lock colours to create ice, lava or night-time versions.</li>

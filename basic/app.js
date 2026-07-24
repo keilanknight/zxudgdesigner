@@ -1043,8 +1043,8 @@ function closeCloud() {
   document.body.classList.remove('modal-open');
 }
 
-function qaopUrl(tapUrl) {
-  return 'https://torinak.com/qaop/#l=' + tapUrl;
+function qaopUrl(tapUrl, model = '48') {
+  return 'https://torinak.com/qaop/#' + (model === '128' ? '128#' : '') + 'l=' + tapUrl;
 }
 
 async function copyLink(url, label) {
@@ -1119,7 +1119,7 @@ function renderCloudProjects() {
       actions.append(cloudButton('Copy Project Link', () => copyLink(project.shareUrl, 'Project link')));
       actions.append(cloudButton('Copy TAP Link', () => copyLink(project.tapUrl, 'TAP link')));
       actions.append(cloudLink('Download TAP', project.tapUrl));
-      actions.append(cloudLink('Try in QAOP', qaopUrl(project.tapUrl)));
+      actions.append(cloudLink('Try in QAOP', qaopUrl(project.tapUrl, project.basicTarget)));
       actions.append(cloudButton('Unpublish', () => unpublishCloud(project.id)));
     }
     actions.append(cloudButton('Delete', () => deleteCloud(project)));
@@ -1312,7 +1312,10 @@ async function loadShared(slug) {
     $('#sharedName').textContent = result.meta.name;
     $('#sharedOwner').textContent = 'Shared by ' + result.meta.owner;
     $('#sharedTap').href = result.meta.tapUrl;
-    $('#sharedQaop').href = qaopUrl(result.meta.tapUrl);
+    $('#sharedQaop').href = qaopUrl(
+      result.meta.tapUrl,
+      effectiveBasicModel(result.project.source, result.project.targetModel)
+    );
     $('#sharedCard').hidden = false;
     openCloud();
   } catch (error) {

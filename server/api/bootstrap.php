@@ -645,6 +645,50 @@ function project_record(string $projectId, int $userId): array
     return $record;
 }
 
+function basic_project_target(array $project): string
+{
+    $requested = $project['targetModel'] ?? 'auto';
+    if ($requested === '48' || $requested === '128') {
+        return $requested;
+    }
+    $source = isset($project['source']) && is_string($project['source'])
+        ? str_replace("\r", '', $project['source'])
+        : '';
+    foreach (explode("\n", $source) as $line) {
+        if (!preg_match('/^\s*\d+\s+(.*)$/', $line, $match)) {
+            continue;
+        }
+        $body = $match[1];
+        $code = '';
+        $quoted = false;
+        $length = strlen($body);
+        for ($index = 0; $index < $length; $index++) {
+            $character = $body[$index];
+            if ($character === '"') {
+                $quoted = !$quoted;
+                $code .= ' ';
+                continue;
+            }
+            if ($quoted) {
+                $code .= ' ';
+                continue;
+            }
+            if (
+                strcasecmp(substr($body, $index, 3), 'REM') === 0 &&
+                ($index === 0 || !preg_match('/[A-Za-z0-9_$]/', $body[$index - 1])) &&
+                ($index + 3 >= $length || !preg_match('/[A-Za-z0-9_$]/', $body[$index + 3]))
+            ) {
+                break;
+            }
+            $code .= $character;
+        }
+        if (preg_match('/\b(?:PLAY|SPECTRUM)\b/i', $code)) {
+            return '128';
+        }
+    }
+    return '48';
+}
+
 function project_summary(array $record): array
 {
     $config = beta_config();
@@ -662,7 +706,7 @@ function project_summary(array $record): array
         ? $config['base_url'] . '/t/' . $record['slug'] . '.tap?v=' .
             (int) ($record['tap_revision'] ?? 0)
         : null;
-    return [
+    $summary = [
         'id' => $record['id'],
         'type' => $type,
         'name' => $record['name'],
@@ -678,6 +722,14 @@ function project_summary(array $record): array
         'updatedAt' => $record['updated_at'],
         'publishedAt' => $record['published_at'],
     ];
+    if ($type === 'basic') {
+        try {
+            $summary['basicTarget'] = basic_project_target(load_project_json($record));
+        } catch (Throwable $error) {
+            $summary['basicTarget'] = '48';
+        }
+    }
+    return $summary;
 }
 
 function random_project_id(): string

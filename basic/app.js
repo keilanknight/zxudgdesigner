@@ -45,6 +45,7 @@ const HELP = {
   'POKE / PEEK': 'PEEK reads a memory byte and POKE writes one. Use them carefully: the Spectrum will faithfully let you poke something important!',
   'BIN': 'Write a binary number using only 0 and 1, such as BIN 11111111 for 255. TAP export stores the correct numeric value while keeping the readable binary digits in the listing.',
   'USR': 'RANDOMIZE USR address calls machine code. USR "A" gives the address of UDG A.',
+  'Graphics symbols': 'Inside a string, use \\1 through \\16 for the Spectrum’s 16 block-graphics characters. For example, \\3 exports as character 131. The Spectrum order puts \\8 at character 128; \\9 resumes at 136. \\17 and larger numbers remain ordinary text.',
   'UDGs': 'On a Spectrum, enter Graphics mode and press a letter to type a UDG. In this editor, use \\A onward inside a string. A 48K target supports A–U; a 128K target supports A–S because its SPECTRUM and PLAY commands use the final two token bytes.',
   'REM': 'Everything after REM is a comment. Keywords and numbers inside it are stored as ordinary characters.',
   'TAP export': 'The exported TAP contains the real tokenised BASIC program. Set Autostart line to the line that should run automatically after loading.',
@@ -248,7 +249,17 @@ function tokeniseBody(body, model = '48') {
       offset++;
       continue;
     }
+    if (quoted && character === '\\') {
+      const symbolMatch = body.slice(offset + 1).match(/^(1[0-6]|[1-9])(?!\d)/);
+      if (symbolMatch) {
+        const symbol = Number(symbolMatch[1]);
+        bytes.push(symbol === 8 ? 128 : symbol < 8 ? 128 + symbol : 127 + symbol);
+        offset += symbolMatch[1].length + 1;
+        continue;
+      }
+    }
     if (
+      quoted &&
       character === '\\' &&
       /^[A-U]$/i.test(body[offset + 1] || '')
     ) {

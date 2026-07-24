@@ -231,6 +231,9 @@
 
       <section id="basic-help-udgs" class="help-section">
         <h3><span>9</span> BASIC and user-defined graphics</h3>
+        <p>The Spectrum also has 16 built-in block-graphics symbols. Inside a string, write <code>\1</code> through <code>\16</code> and TAP export converts them to the real graphics character. For example, <code>\3</code> becomes character 131. The original Spectrum ordering has one delightful quirk: <code>\8</code> is character 128, then <code>\9</code> continues at 136. <code>\17</code> and larger numbers are left as ordinary text.</p>
+        <pre>10 PRINT AT 10,12;"\1\2\3\4"
+20 PRINT AT 11,12;"\5\6\7\8"</pre>
         <p>On a real Spectrum, UDGs are entered in Graphics mode. In this editor, write <code>\A</code onward inside a string. A 48K target supports A–U; a 128K target supports A–S because its last two character codes are reassigned to SPECTRUM and PLAY.</p>
         <pre>10 PRINT AT 10,15;"\A"
 20 PRINT AT 12,11;"UDGS B TO U: \B\C\D ... \U"</pre>

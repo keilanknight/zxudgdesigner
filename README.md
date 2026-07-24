@@ -406,6 +406,11 @@ A–S because `SPECTRUM` and `PLAY` use the final two token bytes. Auto selects
 128K when either command appears. JSON and BAS source retain the readable
 backslash notation.
 
+The Spectrum's 16 built-in block-graphics symbols can be written inside BASIC
+strings as `\1` through `\16`. TAP export converts them to character codes
+129–135, 128, and 136–143 respectively, matching the Spectrum's unusual
+Graphics-mode key order. `\17` and larger numbers remain ordinary text.
+
 ## Release
 
 The stable production release is `v1.7.1`. Cloud work is currently available as
